@@ -2,12 +2,12 @@
 // It expects the partials to be loaded into the DOM before initApp() runs.
 
 const CONFIG = {
-    WEB_APP_URL: "https://script.google.com/macros/s/AKfycby5GN_Mra_9gc92A8J3hEnL7XHvyUwpOf3OFivbEfvn8fI02OEfWhYUiOgTB7rvGLUk/exec",
-    LOGO_URL: "https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png",
-    SITE_URL: "https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1",
-    WHATSAPP: "+34611260259",
-    STORE_NAME: "Massimo's Pizza",
-    STORE_LOCATION: "Magaluf, Mallorca"
+  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzwT3A9-BD1HdJ359qnLmHkobtK7GnTizB8X7M2rcr1icsmnan_L1x8jOVcQma161yg/exec",
+  LOGO_URL: "https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png",
+  SITE_URL: "https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1",
+  WHATSAPP: "+34611260259",
+  STORE_NAME: "Massimo's Pizza",
+  STORE_LOCATION: "Magaluf, Mallorca"
 };
 
 const defaultConfig = { restaurant_name: "Massimo's Pizza", whatsapp_number: "+34611260259" };
