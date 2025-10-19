@@ -99,11 +99,13 @@ async function fetchMenu(forceBackground = false) {
 
     // Save cache
     localStorage.setItem(cacheKey, JSON.stringify({ data: state.items, timestamp: now }));
+  // Update last-updated label
+  try{ updateLastUpdatedLabel(now); }catch(e){}
 
-    renderCategories();
-    renderProducts();
-    updateCartUI();
-    showToast('Menú actualizado ✅');
+  renderCategories();
+  renderProducts();
+  updateCartUI();
+  showToast('Menú actualizado ✅');
   } catch (err) {
     console.error('Error al cargar menú:', err);
     showToast('⚠️ No se pudo actualizar el menú. Usando datos locales.');
@@ -118,6 +120,18 @@ function JSONparseSafe(str){ try{ return JSON.parse(str); }catch(e){ return []; 
 function announceToScreenReader(message) { const announcer = document.getElementById('sr-announcements'); if (announcer) { announcer.textContent = message; setTimeout(()=>announcer.textContent='',1000); } }
 
 function showToast(message) { const toast = document.getElementById('toast'); if (!toast) return; toast.textContent = message; toast.classList.add('show'); announceToScreenReader(message); setTimeout(()=>toast.classList.remove('show'),3000); }
+
+// Last-updated UI
+function updateLastUpdatedLabel(timestamp){
+  const el = document.getElementById('last-updated');
+  if(!el) return;
+  if(!timestamp){ el.textContent = 'Última actualización: —'; return; }
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  if(mins < 1) el.textContent = 'Última actualización: hace unos segundos';
+  else if(mins === 1) el.textContent = 'Última actualización: hace 1 minuto';
+  else el.textContent = `Última actualización: hace ${mins} minutos`;
+}
 
 // Cart helpers (index/sku tolerant)
 function saveCart() { try { localStorage.setItem('massimos_cart_v1', JSON.stringify(state.cart)); updateCartUI(); } catch(e){ console.warn('Cart save failed',e); } }
@@ -203,6 +217,17 @@ async function initApp(){
 
   // Ensure categories are derived from the loaded items
   state.categories=[...new Set(state.items.map(i=>i.category))];
+
+  // Show last-updated from cache if available
+  try{
+    const cached = JSON.parse(localStorage.getItem('massimo_menu_cache')||'null');
+    if(cached && cached.timestamp) updateLastUpdatedLabel(cached.timestamp);
+  }catch(e){}
+
+  // Refresh the 'last-updated' label every minute
+  setInterval(()=>{
+    try{ const cached = JSON.parse(localStorage.getItem('massimo_menu_cache')||'null'); updateLastUpdatedLabel(cached && cached.timestamp); }catch(e){}
+  }, 60 * 1000);
 
   const debouncedSearch = debounce((q)=>{ state.filters.q=q; renderProducts(); },300);
   const searchInput=document.getElementById('search-input'); if(searchInput) searchInput.addEventListener('input',(e)=>debouncedSearch(e.target.value));
