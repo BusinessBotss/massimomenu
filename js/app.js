@@ -21,49 +21,107 @@ const MENU_DATA = [ /* fallback items omitted for brevity */ ];
 
 let state = { items: MENU_DATA, categories: [], cart: JSON.parse(localStorage.getItem('massimos_cart_v1') || '[]'), filters: { category:'all', q:'' } };
 
-// Fetch menu from Google Apps Script web app (CONFIG.WEB_APP_URL)
-async function fetchMenu(){
-  const container = document.getElementById('products-container');
-  // show loading spinner
-  if(container) container.innerHTML = `<div class="loading-spinner" style="text-align:center;padding:48px;"><div class="spinner" aria-hidden="true" style="width:48px;height:48px;border:6px solid var(--beige);border-top-color:var(--red);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite"></div><div>Loading menu...</div></div>`;
-  try{
-    const resp = await fetch(CONFIG.WEB_APP_URL, { method: 'GET', cache: 'no-cache' });
-    if(!resp.ok) throw new Error('Network response not ok');
-    const data = await resp.json();
-    // Expecting either {items:[...]} or an array of rows
-    let items = [];
-    if(Array.isArray(data)) items = data;
-    else if(data && Array.isArray(data.items)) items = data.items;
+// Smart menu cache with background refresh
+const MENU_CACHE_KEY = 'massimos_menu_cache_v1';
+const MENU_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-    // Normalize items: ensure fields sku, name, description, price (number), category, available
-    const normalized = items.map((row, i)=>{
-      // Support different column names from sheets
-      const sku = row.sku || row.SKU || row.id || `sku-${i}`;
-      const name = row.name || row.Nombre || row.title || '';
-      const description = row.description || row.Descripcion || row.desc || '';
-      const price = Number(row.price || row.Precio || row.Price || 0) || 0;
-      const category = row.category || row.Categoria || row.group || 'Uncategorized';
-      const available = (typeof row.available !== 'undefined') ? (row.available === true || row.available === 'true' || row.available === 1 || row.available === '1') : true;
-      const variants = Array.isArray(row.variants) ? row.variants : (row.variants ? JSONparseSafe(row.variants) || [] : []);
-      const extras = Array.isArray(row.extras) ? row.extras : (row.extras ? JSONparseSafe(row.extras) || [] : []);
-      return { sku, name, description, price, category, available, variants, extras };
-    });
+// Normalize menu items from various response formats
+function normalizeMenuItems(items) {
+  return items.map((row, i) => {
+    // Support different column names from sheets
+    const sku = row.sku || row.SKU || row.id || `sku-${i}`;
+    const name = row.name || row.Nombre || row.title || '';
+    const description = row.description || row.Descripcion || row.desc || '';
+    const price = Number(row.price || row.Precio || row.Price || 0) || 0;
+    const category = row.category || row.Categoria || row.group || 'Uncategorized';
+    const available = (typeof row.available !== 'undefined') ? (row.available === true || row.available === 'true' || row.available === 1 || row.available === '1') : true;
+    const variants = Array.isArray(row.variants) ? row.variants : (row.variants ? JSONparseSafe(row.variants) || [] : []);
+    const extras = Array.isArray(row.extras) ? row.extras : (row.extras ? JSONparseSafe(row.extras) || [] : []);
+    return { sku, name, description, price, category, available, variants, extras };
+  });
+}
 
-    // If normalized is empty, throw to use fallback
-    if(!normalized || normalized.length===0) throw new Error('No items returned');
+// Fetch fresh menu data from API
+async function fetchMenuFromAPI(silent = false) {
+  if (!silent) {
+    const container = document.getElementById('products-container');
+    if (container) container.innerHTML = `<div class="loading-spinner" style="text-align:center;padding:48px;"><div class="spinner" aria-hidden="true" style="width:48px;height:48px;border:6px solid var(--beige);border-top-color:var(--red);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite"></div><div>Loading menu...</div></div>`;
+  }
+  
+  const resp = await fetch(CONFIG.WEB_APP_URL, { method: 'GET', cache: 'no-cache' });
+  if (!resp.ok) throw new Error('Network response not ok');
+  const data = await resp.json();
+  
+  // Extract items array from response
+  let items = [];
+  if (Array.isArray(data)) items = data;
+  else if (data && Array.isArray(data.items)) items = data.items;
+  if (!items.length) throw new Error('No items returned');
+  
+  // Normalize and return items
+  return normalizeMenuItems(items);
+}
 
-    state.items = normalized;
-    state.categories = [...new Set(state.items.map(i=>i.category))];
+// Main menu loading function with caching
+async function fetchMenu() {
+  try {
+    // Try to load from cache first
+    const cached = localStorage.getItem(MENU_CACHE_KEY);
+    if (cached) {
+      const { items, timestamp } = JSON.parse(cached);
+      const age = Date.now() - timestamp;
+      
+      if (age < MENU_CACHE_TTL) {
+        // Valid cache: use it and refresh in background
+        state.items = items;
+        state.categories = [...new Set(items.map(i => i.category))];
+        renderCategories();
+        renderProducts();
+        updateCartUI();
+        
+        // Silent background refresh if cache is over 4 minutes old (80% of TTL)
+        if (age > MENU_CACHE_TTL * 0.8) {
+          fetchMenuFromAPI(true)
+            .then(items => {
+              localStorage.setItem(MENU_CACHE_KEY, JSON.stringify({ items, timestamp: Date.now() }));
+              state.items = items;
+              state.categories = [...new Set(items.map(i => i.category))];
+              renderCategories();
+              renderProducts();
+              updateCartUI();
+            })
+            .catch(console.warn);
+        }
+        return true;
+      }
+    }
+    
+    // No cache or expired: fetch fresh data
+    const items = await fetchMenuFromAPI(false);
+    
+    // Cache the fresh data
+    localStorage.setItem(MENU_CACHE_KEY, JSON.stringify({
+      items,
+      timestamp: Date.now()
+    }));
+    
+    // Update UI
+    state.items = items;
+    state.categories = [...new Set(items.map(i => i.category))];
     renderCategories();
     renderProducts();
     updateCartUI();
     showToast('Menú cargado correctamente');
     return true;
-  }catch(err){
+    
+  } catch (err) {
     console.warn('fetchMenu failed, falling back to MENU_DATA', err);
-    // fallback to MENU_DATA already present in state
+    // Clear invalid cache if any
+    try { localStorage.removeItem(MENU_CACHE_KEY); } catch (e) {}
+    
+    // Fallback to MENU_DATA
     state.items = MENU_DATA;
-    state.categories = [...new Set(state.items.map(i=>i.category))];
+    state.categories = [...new Set(state.items.map(i => i.category))];
     renderCategories();
     renderProducts();
     updateCartUI();
