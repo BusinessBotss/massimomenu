@@ -158,6 +158,29 @@ function updateCartUI(){ const count = state.cart.reduce((t,i)=>t+i.qty,0); cons
 
 // Renderers (similar to original)
 function renderProducts(){ const container=document.getElementById('products-container'); if(!container) return; let filtered=state.items.filter(i=>i.available); if(state.filters.category!=='all') filtered=filtered.filter(i=>i.category===state.filters.category); if(state.filters.q){ const q=state.filters.q.toLowerCase(); filtered=filtered.filter(i=>i.name.toLowerCase().includes(q)||i.description.toLowerCase().includes(q)); } if(filtered.length===0){ container.innerHTML=`<div style="text-align:center;padding:50px;color:#666"><div style="font-size:48px;margin-bottom:20px;">🔍</div><p>No products found</p></div>`; return; } container.innerHTML=`<div class="products-grid">${filtered.map(item=>{ let card='product-card'; if(item.category==='Homemade Dish') card+=' homemade'; if(item.category==='Dessert') card+=' dessert'; const hasCustomization = (item.variants && item.variants.length>0)||(item.extras && item.extras.length>0); const buttonText = hasCustomization ? 'Customize' : 'Add'; const buttonAction = hasCustomization ? 'customize' : 'add-to-cart'; return `<div class="${card}">${!item.available?`<div class="unavailable-badge">Unavailable</div>`:''}<h3 class="product-name">${esc(item.name)}</h3><p class="product-description">${esc(item.description)}</p><div class="product-footer"><div class="product-price">${formatPrice(item.price)}</div><button class="add-btn" data-sku="${esc(item.sku)}" data-action="${buttonAction}" ${!item.available?'disabled':''}>${buttonText}</button></div></div>` }).join('')}</div>`; }
+function renderProducts() {
+  const container = document.getElementById('products-container');
+  if (!container) return;
+  let filtered = state.items.filter(i => i.available);
+  if (state.filters.category !== 'all') filtered = filtered.filter(i => i.category === state.filters.category);
+  if (state.filters.q) {
+    const q = state.filters.q.toLowerCase();
+    filtered = filtered.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q));
+  }
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state fade-in"><div class="empty-state-icon">🔍</div><div>No products found</div></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="products-grid">${filtered.map(item => {
+    let card = 'product-card fade-in';
+    if (item.category === 'Homemade Dish') card += ' homemade';
+    if (item.category === 'Dessert') card += ' dessert';
+    const hasCustomization = (item.variants && item.variants.length > 0) || (item.extras && item.extras.length > 0);
+    const buttonText = hasCustomization ? 'Customize' : 'Add';
+    const buttonAction = hasCustomization ? 'customize' : 'add-to-cart';
+    return `<div class="${card}">${!item.available ? `<div class="unavailable-badge">Unavailable</div>` : ''}<h3 class="product-name">${esc(item.name)}</h3><p class="product-description">${esc(item.description)}</p><div class="product-footer"><div class="product-price">${formatPrice(item.price)}</div><button class="add-btn" data-sku="${esc(item.sku)}" data-action="${buttonAction}" ${!item.available ? 'disabled' : ''}>${buttonText}</button></div></div>`
+  }).join('')}</div>`;
+}
 
 function renderCategories(){ const container=document.getElementById('categories-list'); if(!container) return; const allChip=`<div class="category-chip ${state.filters.category==='all'?'active':''}" data-category="all">All</div>`; const chips = state.categories.map(c=>`<div class="category-chip ${state.filters.category===c?'active':''}" data-category="${esc(c)}">${esc(c)}</div>`).join(''); container.innerHTML = allChip + chips; }
 
@@ -247,6 +270,28 @@ async function bootstrap(){ // load header, menu, footer and then init
     // Try to load live menu, then initialize the app
     await fetchMenu();
     initApp();
+
+    // Add manual refresh button handler
+    const refreshBtn = document.getElementById('refresh-menu-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async () => {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Refreshing...';
+        await fetchMenuFromAPI(false)
+          .then(items => {
+            localStorage.setItem('massimos_menu_cache_v1', JSON.stringify({ items, timestamp: Date.now() }));
+            state.items = items;
+            state.categories = [...new Set(items.map(i => i.category))];
+            renderCategories();
+            renderProducts();
+            updateCartUI();
+            showToast('Menú actualizado');
+          })
+          .catch(()=>showToast('No se pudo actualizar el menú.'));
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = '🔄 Refresh menu';
+      });
+    }
 }
 
 // Start bootstrap when DOM ready
