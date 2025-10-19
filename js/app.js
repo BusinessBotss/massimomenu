@@ -16,10 +16,65 @@ function esc(str) { if (typeof str !== 'string') return str; const div = documen
 function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
 function formatPrice(price) { return new Intl.NumberFormat('en',{ style:'currency', currency:'EUR'}).format(price); }
 
-// Menu data (kept inline for now)
-const MENU_DATA = [ /* same items as before - omitted for brevity in this file on disk */ ];
+// Menu data (kept inline as fallback)
+const MENU_DATA = [ /* fallback items omitted for brevity */ ];
 
 let state = { items: MENU_DATA, categories: [], cart: JSON.parse(localStorage.getItem('massimos_cart_v1') || '[]'), filters: { category:'all', q:'' } };
+
+// Fetch menu from Google Apps Script web app (CONFIG.WEB_APP_URL)
+async function fetchMenu(){
+  const container = document.getElementById('products-container');
+  // show loading spinner
+  if(container) container.innerHTML = `<div class="loading-spinner" style="text-align:center;padding:48px;"><div class="spinner" aria-hidden="true" style="width:48px;height:48px;border:6px solid var(--beige);border-top-color:var(--red);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite"></div><div>Loading menu...</div></div>`;
+  try{
+    const resp = await fetch(CONFIG.WEB_APP_URL, { method: 'GET', cache: 'no-cache' });
+    if(!resp.ok) throw new Error('Network response not ok');
+    const data = await resp.json();
+    // Expecting either {items:[...]} or an array of rows
+    let items = [];
+    if(Array.isArray(data)) items = data;
+    else if(data && Array.isArray(data.items)) items = data.items;
+
+    // Normalize items: ensure fields sku, name, description, price (number), category, available
+    const normalized = items.map((row, i)=>{
+      // Support different column names from sheets
+      const sku = row.sku || row.SKU || row.id || `sku-${i}`;
+      const name = row.name || row.Nombre || row.title || '';
+      const description = row.description || row.Descripcion || row.desc || '';
+      const price = Number(row.price || row.Precio || row.Price || 0) || 0;
+      const category = row.category || row.Categoria || row.group || 'Uncategorized';
+      const available = (typeof row.available !== 'undefined') ? (row.available === true || row.available === 'true' || row.available === 1 || row.available === '1') : true;
+      const variants = Array.isArray(row.variants) ? row.variants : (row.variants ? JSONparseSafe(row.variants) || [] : []);
+      const extras = Array.isArray(row.extras) ? row.extras : (row.extras ? JSONparseSafe(row.extras) || [] : []);
+      return { sku, name, description, price, category, available, variants, extras };
+    });
+
+    // If normalized is empty, throw to use fallback
+    if(!normalized || normalized.length===0) throw new Error('No items returned');
+
+    state.items = normalized;
+    state.categories = [...new Set(state.items.map(i=>i.category))];
+    renderCategories();
+    renderProducts();
+    updateCartUI();
+    showToast('Menú cargado correctamente');
+    return true;
+  }catch(err){
+    console.warn('fetchMenu failed, falling back to MENU_DATA', err);
+    // fallback to MENU_DATA already present in state
+    state.items = MENU_DATA;
+    state.categories = [...new Set(state.items.map(i=>i.category))];
+    renderCategories();
+    renderProducts();
+    updateCartUI();
+    showToast('No se pudo cargar el menú en vivo. Usando menú local.');
+    return false;
+  }
+}
+
+// small helper to safely parse JSON-ish fields (non-fatal)
+function JSONparseSafe(str){ try{ return JSON.parse(str); }catch(e){ return []; } }
+
 
 function announceToScreenReader(message) { const announcer = document.getElementById('sr-announcements'); if (announcer) { announcer.textContent = message; setTimeout(()=>announcer.textContent='',1000); } }
 
@@ -131,6 +186,8 @@ async function bootstrap(){ // load header, menu, footer and then init
     // Important: attach global functions to window so inline handlers (onclick attributes) work for now
     window.toggleCart = toggleCart; window.closeCart = closeCart; window.clearCart = clearCart; window.showOrderSummary = showOrderSummary; window.sendPreOrder = sendPreOrder; window.closeCustomize = closeCustomize; window.addCustomizedItem = addCustomizedItem;
 
+    // Try to load live menu, then initialize the app
+    await fetchMenu();
     initApp();
 }
 
