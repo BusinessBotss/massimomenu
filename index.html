@@ -1,53 +1,751 @@
 <!doctype html>
 <html lang="es">
-<head>
+ <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Massimo's Pizza - Menú Digital</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Pacifico&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
-  <div id="header-placeholder"></div>
-  <div id="menu-placeholder"></div>
-  <div id="footer-placeholder"></div>
-  <div id="utils-placeholder"></div>
+  <title>Massimo's Pizza - Digital Menu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;family=Pacifico&amp;display=swap" rel="stylesheet">
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <script src="/js/app.js"></script>
-</body>
-</html>
+        :root {
+            --cream: #FEF9F1;
+            --green: #2F5233;
+            --red: #C73A2A;
+            --white: #FFFFFF;
+            --neutral: #D9D1C7;
+            --shadow: rgba(47, 82, 51, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--cream);
+            color: var(--green);
+            line-height: 1.6;
+            height: 100%;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--white);
+            box-shadow: 0 2px 20px var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+            position: relative;
+        }
+
+        .logo {
+            height: 80px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .header-actions {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .order-btn {
+            background: var(--red);
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .order-btn:hover {
+            background: var(--green);
+            transform: translateY(-2px);
+        }
+
+        /* Search */
+        .search-section {
+            padding: 30px 0;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            border: 2px solid var(--neutral);
+            border-radius: 25px;
+            font-size: 16px;
+            background: var(--white);
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(47, 82, 51, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--green);
+        }
+
+        /* Categories */
+        .categories-section {
+            padding: 20px 0;
+        }
+
+        .categories-scroll {
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .categories-list {
+            display: flex;
+            gap: 15px;
+            min-width: max-content;
+            padding: 0 20px;
+        }
+
+        .category-chip {
+            background: var(--white);
+            border: 2px solid var(--neutral);
+            color: var(--green);
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+
+        .category-chip:hover,
+        .category-chip.active {
+            background: var(--green);
+            color: var(--white);
+            border-color: var(--green);
+            transform: translateY(-2px);
+        }
+
+        /* Products Grid */
+        .products-section {
+            padding: 30px 0;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .product-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 5px 25px var(--shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card.homemade {
+            background: linear-gradient(135deg, #FBF6E8 0%, #F5F0E3 100%);
+            border-left: 4px solid var(--green);
+        }
+
+        .product-card.dessert {
+            background: linear-gradient(135deg, #FFF5F5 0%, #FFF0F0 100%);
+            border-left: 4px solid var(--red);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .product-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--green);
+            margin-bottom: 10px;
+        }
+
+        .product-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .product-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--red);
+            font-family: 'Pacifico', cursive;
+        }
+
+        .view-only-badge {
+            background: var(--neutral);
+            color: var(--green);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .unavailable-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--red);
+            color: var(--white);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Order Modal */
+        .order-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .order-modal.active {
+            display: flex;
+        }
+
+        .order-content {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--cream);
+        }
+
+        .order-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        .close-order {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--green);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .order-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--green);
+        }
+
+        .form-input,
+        .form-textarea {
+            padding: 12px 16px;
+            border: 2px solid var(--neutral);
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--green);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .order-info {
+            background: var(--cream);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .order-info h4 {
+            color: var(--green);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .order-info p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .submit-order-btn {
+            background: var(--green);
+            color: var(--white);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-order-btn:hover {
+            background: var(--red);
+            transform: translateY(-2px);
+        }
+
+        .submit-order-btn:disabled {
+            background: var(--neutral);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--green);
+            color: var(--white);
+            padding: 40px 0;
+            margin-top: 50px;
+        }
+
+        .footer-content {
+            text-align: center;
+        }
+
+        .footer-title {
+            font-family: 'Pacifico', cursive;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--cream);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 50px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--cream);
+            border-top: 4px solid var(--green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--green);
+            color: var(--white);
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: var(--green);
+        }
+
+        .toast.error {
+            background: var(--red);
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        button:focus,
+        input:focus,
+        textarea:focus,
+        .category-chip:focus {
+            outline: 2px solid var(--green);
+            outline-offset: 2px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .header-content {
+                padding: 15px 0;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-actions {
+                position: static;
+                transform: none;
+            }
+
+            .logo {
+                height: 60px;
+            }
+
+            .products-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .product-card {
+                padding: 20px;
+            }
+
+            .categories-list {
+                padding: 0 15px;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .order-content {
+                width: 95%;
+                max-height: 85vh;
+                margin: 10px;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-input {
+                padding: 12px 40px 12px 15px;
+            }
+
+            .product-footer {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .order-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <header class="header">
+   <div class="container">
+    <div class="header-content"><img src="https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png" alt="Massimo's Pizza" class="logo" onclick="scrollToTop()">
+     <div class="header-actions"><button class="order-btn" onclick="showOrderModal()"> 📋 Create Order </button>
+     </div>
+    </div>
+   </div>
+  </header>
+  <main>
+   <section class="search-section">
+    <div class="container">
+     <div class="search-container"><input type="text" class="search-input" id="search-input" placeholder="Search our menu..."> <span class="search-icon">🔍</span>
+     </div>
+    </div>
+   </section>
+   <section class="categories-section">
+    <div class="container">
+     <div class="categories-scroll">
+      <div class="categories-list" id="categories-list">
+       <div class="category-chip active" data-category="all">
+        All
+       </div>
+      </div>
+     </div>
+    </div>
+   </section>
+   <section class="products-section">
+    <div class="container">
+     <div id="products-container">
+      <div class="loading">
+       <div class="spinner"></div>
+      </div>
+     </div>
+    </div>
+   </section>
+  </main>
+  <footer class="footer">
+   <div class="container">
+    <div class="footer-content">
+     <h3 class="footer-title">Massimo's Pizza</h3>
+     <div class="footer-links"><a href="https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1" target="_blank" rel="noopener noreferrer" class="footer-link"> 🌐 Visit Official Website </a> <a href="tel:+34611260259" class="footer-link"> 📞 Call Us </a> <a href="https://wa.me/34611260259" target="_blank" rel="noopener noreferrer" class="footer-link"> 📱 WhatsApp </a>
+     </div>
+     <p>© 2026 Massimo's Pizza. Magaluf, Mallorca.</p>
+    </div>
+   </div>
+  </footer><!-- Order Modal -->
+  <div class="order-modal" id="order-modal">
+   <div class="order-content">
+    <div class="order-header">
+     <h3 class="order-title">Create Your Order</h3><button class="close-order" onclick="closeOrderModal()">✕</button>
+    </div>
+    <form class="order-form" id="order-form">
+     <div class="form-group"><label for="customer-name" class="form-label">Your Name *</label> <input type="text" id="customer-name" class="form-input" required placeholder="Enter your full name">
+     </div>
+     <div class="form-group"><label for="customer-phone" class="form-label">Phone Number *</label> <input type="tel" id="customer-phone" class="form-input" required placeholder="+34 XXX XXX XXX">
+     </div>
+     <div class="form-group"><label for="order-details" class="form-label">Your Order Details *</label> <textarea id="order-details" class="form-textarea" required placeholder="Please list all items you'd like to order with quantities. Example:
+- 2x Margherita Pizza
+- 1x Pepperoni Pizza
+- 3x Garlic Bread
+- 2x Coca Cola"></textarea>
+     </div>
+     <div class="form-group"><label for="special-requests" class="form-label">Special Requests</label> <textarea id="special-requests" class="form-textarea" placeholder="Any special instructions, allergies, or modifications..."></textarea>
+     </div>
+     <div class="order-info">
+      <h4>📋 How it works:</h4>
+      <p>• Submit your order for review</p>
+      <p>• Massimo will confirm availability &amp; total price</p>
+      <p>• You'll receive pickup time via WhatsApp</p>
+      <p>• Pay when you collect your order</p>
+     </div><button type="submit" class="submit-order-btn" id="submit-btn"> 📱 Send Order for Approval </button>
+    </form>
+   </div>
+  </div><!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div><!-- Screen reader announcements -->
+  <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <script>
+        // Configuration
+        const CONFIG = {
+            WHATSAPP: "+34611260259",
+            SITE_URL: "https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1"
+        };
+
+        // Default config for Element SDK
+        const defaultConfig = {
+            restaurant_name: "Massimo's Pizza",
+            whatsapp_number: "+34611260259"
+        };
+
+        // Complete menu data
+        const MENU_DATA = [
+            // Pizzas
+            {"sku":"PIZ001","category":"Pizza","name":"Margherita","description":"Tomato sauce, mozzarella, basil or oregano","price":7,"available":true},
+            {"sku":"PIZ002","category":"Pizza","name":"Marinara","description":"Tomato sauce, fresh garlic, oregano, EVOO","price":7,"available":true},
+            {"sku":"PIZ003","category":"Pizza","name":"Diavola","description":"Tomato sauce, mozzarella, spicy chorizo","price":9,"available":true},
+            {"sku":"PIZ004","category":"Pizza","name":"Prosciutto e Funghi","description":"Tomato sauce, cooked ham, mushrooms","price":9,"available":true},
+            {"sku":"PIZ005","category":"Pizza","name":"Quattro Formaggi","description":"Tomato sauce, mozzarella, gorgonzola, cheddar, gouda","price":10,"available":true},
+            {"sku":"PIZ006","category":"Pizza","name":"Pepperoni","description":"Tomato sauce, mozzarella, pepperoni","price":9,"available":true},
+            {"sku":"PIZ007","category":"Pizza","name":"Tuna & Onion","description":"Tomato sauce, mozzarella, tuna, red onion","price":9,"available":true},
+            {"sku":"PIZ008","category":"Pizza","name":"Hawaiian","description":"Tomato sauce, mozzarella, cooked ham, pineapple","price":9,"available":true},
+            {"sku":"PIZ009","category":"Pizza","name":"Capricciosa","description":"Tomato sauce, mozzarella, cooked ham, egg","price":10,"available":true},
+            {"sku":"PIZ010","category":"Pizza","name":"Napoli","description":"Tomato sauce, anchovies, capers, oregano, EVOO","price":9,"available":true},
+            {"sku":"PIZ011","category":"Pizza","name":"Vegetarian","description":"Tomato sauce, mozzarella, zucchini, eggplant, bell pepper, mushrooms, basil","price":9,"available":true},
+            
+            // White Pizzas
+            {"sku":"WPZ001","category":"White Pizza","name":"Carbonara","description":"Mozzarella, cream, mushrooms, onion, bacon","price":10,"available":true},
+            {"sku":"WPZ002","category":"White Pizza","name":"Mimosa","description":"Mozzarella, cooked ham, sweetcorn","price":9,"available":true},
+            {"sku":"WPZ003","category":"White Pizza","name":"Boscaiola","description":"Bacon, cooked ham, mushrooms, peas","price":9,"available":true},
+            {"sku":"WPZ004","category":"White Pizza","name":"Vegetarian Bianca","description":"Mozzarella, bell pepper, zucchini, mushrooms, black olives, sweetcorn, basil","price":10,"available":true},
+            
+            // Special Pizzas
+            {"sku":"SPZ001","category":"Special Pizza","name":"Mallorquina","description":"Tomato sauce, sobrasada, goat cheese, honey","price":11,"available":true},
+            {"sku":"SPZ002","category":"Special Pizza","name":"Italian Classic","description":"Tomato sauce, mozzarella, cherry tomatoes, arugula, serrano ham, buffalo mozzarella","price":12,"available":true},
+            {"sku":"SPZ003","category":"Special Pizza","name":"Carnívora","description":"Tomato sauce, mozzarella, ground beef, chicken, ham, bacon, pepperoni, sausage","price":13,"available":true},
+            {"sku":"SPZ004","category":"Special Pizza","name":"Cecina","description":"Mozzarella, cherry tomatoes, arugula, cecina, parmesan flakes","price":12,"available":true},
+            {"sku":"SPZ005","category":"Special Pizza","name":"6 Cheeses","description":"Mozzarella, cheddar, gorgonzola, parmesan, buffalo mozzarella","price":12,"available":true},
+            
+            // Appetizers
+            {"sku":"APP001","category":"Appetizer","name":"Garlic Bread","description":"Fresh garlic bread","price":4,"available":true},
+            {"sku":"APP002","category":"Appetizer","name":"French Fries","description":"Golden crispy fries","price":4,"available":true},
+            {"sku":"APP003","category":"Appetizer","name":"Onion Rings (7)","description":"Battered onion rings (7 pcs)","price":5,"available":true},
+            {"sku":"APP004","category":"Appetizer","name":"Chicken Nuggets (7)","description":"Breaded chicken nuggets (7 pcs)","price":5,"available":true},
+            {"sku":"APP005","category":"Appetizer","name":"Chicken Fingers (7)","description":"Crispy chicken fingers (7 pcs)","price":5,"available":true},
+            {"sku":"APP006","category":"Appetizer","name":"Chicken Wings (7)","description":"Spicy chicken wings (7 pcs)","price":6,"available":true},
+            
+            // Beef Burgers
+            {"sku":"BBG001","category":"Beef Burger","name":"Classic","description":"Lettuce, tomato, beef patty","price":7,"available":true},
+            {"sku":"BBG002","category":"Beef Burger","name":"Double","description":"Lettuce, tomato, double beef patty","price":9,"available":true},
+            {"sku":"BBG003","category":"Beef Burger","name":"With Cheese","description":"Lettuce, tomato, beef patty, cheese","price":8,"available":true},
+            {"sku":"BBG004","category":"Beef Burger","name":"Double with Cheese","description":"Lettuce, tomato, double beef patty, cheese","price":10,"available":true},
             {"sku":"BBG005","category":"Beef Burger","name":"Crispy Bacon","description":"Lettuce, tomato, beef patty, cheese, bacon","price":9,"available":true},
             {"sku":"BBG006","category":"Beef Burger","name":"Double Crispy Bacon","description":"Lettuce, tomato, double beef patty, cheese, bacon","price":11,"available":true},
             {"sku":"BBG007","category":"Beef Burger","name":"Massimo's","description":"Lettuce, tomato, beef, cheese, bacon, egg, crispy onion","price":12,"available":true},
             {"sku":"BBG008","category":"Beef Burger","name":"Massimo's Double","description":"Same with double beef patty","price":14,"available":true},
+            
+            // Chicken Burgers
             {"sku":"CBG001","category":"Chicken Burger","name":"Classic Chicken","description":"Lettuce, tomato, chicken patty","price":7,"available":true},
             {"sku":"CBG002","category":"Chicken Burger","name":"Double Chicken","description":"Lettuce, tomato, double chicken patty","price":9,"available":true},
             {"sku":"CBG003","category":"Chicken Burger","name":"With Cheese","description":"Lettuce, tomato, chicken patty, cheese","price":8,"available":true},
             {"sku":"CBG004","category":"Chicken Burger","name":"Double with Cheese","description":"Lettuce, tomato, double chicken patty, cheese","price":10,"available":true},
             {"sku":"CBG005","category":"Chicken Burger","name":"Crispy Bacon","description":"Lettuce, tomato, chicken, cheese, bacon","price":9,"available":true},
             {"sku":"CBG006","category":"Chicken Burger","name":"Double Crispy Bacon","description":"Lettuce, tomato, double chicken, cheese, bacon","price":11,"available":true},
-            
-            // Block 3 - Extended items
             {"sku":"CBG007","category":"Chicken Burger","name":"Massimo's Chicken","description":"Lettuce, tomato, chicken, cheese, bacon, egg, crispy onion","price":12,"available":true},
             {"sku":"CBG008","category":"Chicken Burger","name":"Massimo's Chicken Double","description":"Same with double chicken patty","price":14,"available":true},
+            
+            // Veggie Burgers
             {"sku":"VBG001","category":"Veggie Burger","name":"Veggie","description":"Lettuce, tomato, veggie patty","price":7,"available":true},
             {"sku":"VBG002","category":"Veggie Burger","name":"With Cheese","description":"Lettuce, tomato, veggie patty, cheese","price":8,"available":true},
+            
+            // Wraps
             {"sku":"WRP001","category":"Wrap","name":"Grilled Chicken","description":"Lettuce, tomato, mayo, grilled chicken, cheese","price":7,"available":true},
             {"sku":"WRP002","category":"Wrap","name":"Crispy Chicken","description":"Lettuce, tomato, mayo, breaded chicken, cheese","price":7,"available":true},
             {"sku":"WRP003","category":"Wrap","name":"Vegetarian","description":"Roasted seasonal vegetables","price":7,"available":true},
             {"sku":"WRP004","category":"Wrap","name":"Tuna","description":"Lettuce, tomato, cheese or sweetcorn","price":7,"available":true},
+            
+            // Panuozzo
             {"sku":"PAN001","category":"Panuozzo","name":"Caprese","description":"Lettuce, tomato, buffalo mozzarella","price":8,"available":true},
             {"sku":"PAN002","category":"Panuozzo","name":"Serrano","description":"Arugula, tomato, serrano ham, buffalo mozzarella","price":9,"available":true},
             {"sku":"PAN003","category":"Panuozzo","name":"Vegetarian","description":"Roasted vegetables, buffalo mozzarella","price":8,"available":true},
+            
+            // Calzone
             {"sku":"CAL001","category":"Calzone","name":"Classic","description":"Cooked ham, mushrooms, mozzarella, oregano","price":9,"available":true},
             {"sku":"CAL002","category":"Calzone","name":"Capricciosa","description":"Black olives, mushrooms, cooked ham, mozzarella","price":9,"available":true},
             {"sku":"CAL003","category":"Calzone","name":"Meat Lover","description":"Chicken, beef, pepperoni, cooked ham, sausage, mozzarella","price":11,"available":true},
             {"sku":"CAL004","category":"Calzone","name":"Vegetarian","description":"Roasted seasonal vegetables, cheese","price":9,"available":true},
             
-            // Block 4 - Homemade & Desserts
+            // Homemade Dishes
             {"sku":"HMD001","category":"Homemade Dish","name":"Lasagna Bolognese","description":"Classic Italian meat lasagna","price":10,"available":true},
             {"sku":"HMD002","category":"Homemade Dish","name":"Spaghetti & Meatballs","description":"Spaghetti with meatballs in tomato sauce","price":10,"available":true},
             {"sku":"HMD003","category":"Homemade Dish","name":"Eggplant Parmigiana","description":"Baked eggplant with tomato and cheese","price":9,"available":true},
+            
+            // Desserts
             {"sku":"DST001","category":"Dessert","name":"Tiramisù","description":"Classic Italian tiramisù","price":5,"available":true},
             {"sku":"DST002","category":"Dessert","name":"Chocolate Crostata","description":"Shortcrust pastry filled with chocolate cream","price":4.5,"available":true},
             {"sku":"DST003","category":"Dessert","name":"Jam Crostata","description":"Shortcrust pastry filled with jam","price":4.5,"available":true},
@@ -58,11 +756,8 @@
         let state = {
             items: MENU_DATA,
             categories: [],
-            cart: JSON.parse(localStorage.getItem('massimos_cart_v1') || '[]'),
             filters: { category: 'all', q: '' }
         };
-
-
 
         // Utility functions
         function formatPrice(price) {
@@ -72,29 +767,45 @@
             }).format(price);
         }
 
-        function showToast(message) {
+        function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
-            toast.classList.add('show');
+            toast.className = `toast ${type} show`;
             
-            // Announce to screen readers
             announceToScreenReader(message);
             
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // Accessibility: Screen reader announcements
         function announceToScreenReader(message) {
             const announcer = document.getElementById('sr-announcements');
             announcer.textContent = message;
             
-            // Clear after announcement
             setTimeout(() => {
                 announcer.textContent = '';
             }, 1000);
         }
 
-        // Focus management for modals
+        function esc(str) {
+            if (typeof str !== 'string') return str;
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Focus management
         let lastFocusedElement = null;
 
         function trapFocus(element) {
@@ -120,291 +831,14 @@
                 }
                 
                 if (e.key === 'Escape') {
-                    if (element.id === 'cart-sidebar') closeCart();
-                    if (element.id === 'summary-modal') closeSummary();
+                    closeOrderModal();
                 }
             });
 
             firstElement?.focus();
         }
 
-        function saveCart() {
-            try {
-                localStorage.setItem('massimos_cart_v1', JSON.stringify(state.cart));
-                updateCartUI();
-            } catch (e) {
-                console.warn("Cart save failed:", e);
-            }
-        }
-
-        // Cart functions with SKU support
-        function addToCart(product, options = []) {
-            const existingItem = state.cart.find(item => 
-                item.sku === product.sku && 
-                JSON.stringify(item.options || []) === JSON.stringify(options)
-            );
-            
-            if (existingItem) {
-                existingItem.qty += 1;
-            } else {
-                state.cart.push({
-                    sku: product.sku,
-                    name: product.name,
-                    price: product.price,
-                    qty: 1,
-                    notes: '',
-                    category: product.category,
-                    options: options
-                });
-            }
-            
-            saveCart();
-            showToast('Añadido al carrito');
-            
-            // Anunciar para lectores de pantalla
-            announceToScreenReader(`${product.name} añadido al carrito`);
-        }
-
-        function updateQty(identifier, newQty) {
-            // identifier can be either an index (number) or a sku (string)
-            if (typeof identifier === 'number') {
-                const idx = identifier;
-                const item = state.cart[idx];
-                if (!item) return;
-                if (newQty <= 0) {
-                    removeItem(idx);
-                    return;
-                }
-                item.qty = newQty;
-                saveCart();
-                return;
-            }
-
-            // fallback: treat as sku
-            const sku = identifier;
-            if (newQty <= 0) {
-                removeItem(sku);
-                return;
-            }
-
-            const item = state.cart.find(item => item.sku === sku);
-            if (item) {
-                item.qty = newQty;
-                saveCart();
-            }
-        }
-
-        function setNotes(identifier, notes) {
-            // identifier can be index or sku
-            if (typeof identifier === 'number') {
-                const idx = identifier;
-                if (state.cart[idx]) {
-                    state.cart[idx].notes = notes;
-                    saveCart();
-                }
-                return;
-            }
-
-            const item = state.cart.find(item => item.sku === identifier);
-            if (item) {
-                item.notes = notes;
-                saveCart();
-            }
-        }
-
-        function removeItem(identifier) {
-            // identifier can be an index or a sku
-            if (typeof identifier === 'number') {
-                const idx = identifier;
-                if (state.cart[idx]) {
-                    state.cart.splice(idx, 1);
-                    saveCart();
-                }
-                return;
-            }
-
-            const sku = identifier;
-            state.cart = state.cart.filter(item => item.sku !== sku);
-            saveCart();
-        }
-
-        function clearCart() {
-            state.cart = [];
-            saveCart();
-        }
-
-        function cartTotal() {
-            return state.cart.reduce((total, item) => total + (item.price * item.qty), 0);
-        }
-
         // UI functions
-        function updateCartUI() {
-            const count = state.cart.reduce((total, item) => total + item.qty, 0);
-            const cartCountEl = document.getElementById('cart-count');
-            if (cartCountEl) cartCountEl.textContent = count;
-            const mobileCartCountEl = document.getElementById('mobile-cart-count');
-            if (mobileCartCountEl) mobileCartCountEl.textContent = count;
-            
-            const cartContent = document.getElementById('cart-content');
-            const cartFooter = document.getElementById('cart-footer');
-            const cartEmpty = document.getElementById('cart-empty');
-            
-            if (state.cart.length === 0) {
-                cartEmpty.style.display = 'block';
-                cartFooter.style.display = 'none';
-                cartEmpty.innerHTML = `
-                    <div style="font-size: 48px; color: var(--neutral); margin-bottom: 20px;">🛒</div>
-                    <p>Your cart is empty</p>
-                `;
-            } else {
-                cartEmpty.style.display = 'none';
-                cartFooter.style.display = 'block';
-                
-                cartContent.innerHTML = state.cart.map((item, index) => {
-                    let displayName = item.name;
-                    if (item.options && item.options.length > 0) {
-                        const optionNames = item.options.map(opt => opt.name).join(', ');
-                        displayName += ` (${optionNames})`;
-                    }
-                    
-                    return `
-                        <div class="cart-item">
-                            <div class="cart-item-header">
-                                <div class="cart-item-name">${esc(displayName)}</div>
-                                <div class="cart-item-price">${formatPrice(item.price)}</div>
-                            </div>
-                            <div class="cart-item-controls">
-                                <div class="qty-controls">
-                                    <button class="qty-btn" data-index="${index}" data-action="decrease">-</button>
-                                    <span class="qty-display">${item.qty}</span>
-                                    <button class="qty-btn" data-index="${index}" data-action="increase">+</button>
-                                </div>
-                                <button class="remove-item" data-index="${index}" data-action="remove">Remove</button>
-                            </div>
-                            <textarea class="cart-notes" placeholder="Product notes" 
-                                      data-index="${index}">${esc(item.notes)}</textarea>
-                        </div>
-                    `;
-                }).join('');
-                
-                document.getElementById('total-amount').textContent = formatPrice(cartTotal());
-            }
-        }
-
-        // Customization modal state
-        let currentCustomizingProduct = null;
-        let selectedVariant = null;
-        let selectedExtras = [];
-
-        function showCustomizeModal(product) {
-            currentCustomizingProduct = product;
-            selectedVariant = product.variants ? product.variants[0] : null;
-            selectedExtras = [];
-            
-            const modal = document.getElementById('customize-modal');
-            const title = document.getElementById('customize-title');
-            const variantsSection = document.getElementById('customize-variants');
-            const extrasSection = document.getElementById('customize-extras');
-            const variantsList = document.getElementById('variants-list');
-            const extrasList = document.getElementById('extras-list');
-            const notes = document.getElementById('customize-notes');
-            
-            title.textContent = `Customize ${product.name}`;
-            notes.value = '';
-            
-            // Show/hide sections based on product options
-            if (product.variants && product.variants.length > 0) {
-                variantsSection.style.display = 'block';
-                variantsList.innerHTML = product.variants.map((variant, index) => `
-                    <div class="variant-option ${index === 0 ? 'selected' : ''}" data-variant-index="${index}">
-                        <div class="variant-info">
-                            <div class="variant-radio"></div>
-                            <span>${esc(variant.name)}</span>
-                        </div>
-                        <div class="variant-price">${variant.price > 0 ? '+' + formatPrice(variant.price) : 'Base'}</div>
-                    </div>
-                `).join('');
-            } else {
-                variantsSection.style.display = 'none';
-            }
-            
-            if (product.extras && product.extras.length > 0) {
-                extrasSection.style.display = 'block';
-                extrasList.innerHTML = product.extras.map((extra, index) => `
-                    <div class="extra-option" data-extra-index="${index}">
-                        <div class="extra-info">
-                            <div class="extra-checkbox"></div>
-                            <span>${esc(extra.name)}</span>
-                        </div>
-                        <div class="extra-price">+${formatPrice(extra.price)}</div>
-                    </div>
-                `).join('');
-            } else {
-                extrasSection.style.display = 'none';
-            }
-            
-            updateCustomizeTotal();
-            modal.classList.add('active');
-            
-            // Trap focus in modal
-            trapFocus(modal.querySelector('.customize-content'));
-            announceToScreenReader('Customization modal opened');
-        }
-
-        function closeCustomize() {
-            document.getElementById('customize-modal').classList.remove('active');
-            currentCustomizingProduct = null;
-            selectedVariant = null;
-            selectedExtras = [];
-            
-            // Return focus
-            if (lastFocusedElement) {
-                lastFocusedElement.focus();
-                lastFocusedElement = null;
-            }
-            announceToScreenReader('Customization modal closed');
-        }
-
-        function updateCustomizeTotal() {
-            if (!currentCustomizingProduct) return;
-            
-            let total = currentCustomizingProduct.price;
-            
-            if (selectedVariant) {
-                total += selectedVariant.price;
-            }
-            
-            selectedExtras.forEach(extra => {
-                total += extra.price;
-            });
-            
-            document.getElementById('customize-total').textContent = formatPrice(total);
-        }
-
-        function addCustomizedItem() {
-            if (!currentCustomizingProduct) return;
-            
-            const options = [];
-            
-            if (selectedVariant && selectedVariant.price > 0) {
-                options.push(selectedVariant);
-            }
-            
-            options.push(...selectedExtras);
-            
-            const notes = document.getElementById('customize-notes').value;
-            
-            addToCart(currentCustomizingProduct, options);
-            
-            // Set notes if provided
-            if (notes.trim()) {
-                const lastItemIndex = state.cart.length - 1;
-                setNotes(lastItemIndex, notes);
-            }
-            
-            closeCustomize();
-        }
-
         function renderProducts() {
             const container = document.getElementById('products-container');
             let filteredItems = state.items.filter(item => item.available);
@@ -440,10 +874,6 @@
                         if (item.category === 'Homemade Dish') cardClass += ' homemade';
                         if (item.category === 'Dessert') cardClass += ' dessert';
                         
-                        const hasCustomization = (item.variants && item.variants.length > 0) || (item.extras && item.extras.length > 0);
-                        const buttonText = hasCustomization ? 'Customize' : 'Add';
-                        const buttonAction = hasCustomization ? 'customize' : 'add-to-cart';
-                        
                         return `
                             <div class="${cardClass}">
                                 ${!item.available ? `<div class="unavailable-badge">Unavailable</div>` : ''}
@@ -451,10 +881,7 @@
                                 <p class="product-description">${esc(item.description)}</p>
                                 <div class="product-footer">
                                     <div class="product-price">${formatPrice(item.price)}</div>
-                                    <button class="add-btn" data-sku="${esc(item.sku)}" data-action="${buttonAction}"
-                                            ${!item.available ? 'disabled' : ''}>
-                                        ${buttonText}
-                                    </button>
+                                    <div class="view-only-badge">View Only</div>
                                 </div>
                             </div>
                         `;
@@ -476,42 +903,6 @@
             container.innerHTML = allChip + categoryChips;
         }
 
-
-
-        // Event handlers
-
-        function toggleCart() {
-            lastFocusedElement = document.activeElement;
-            const overlay = document.getElementById('cart-overlay');
-            const sidebar = document.getElementById('cart-sidebar');
-            
-            if (window.innerWidth <= 768) {
-                sidebar.style.transition = 'transform 0.3s ease';
-                sidebar.style.transform = sidebar.classList.contains('active') ? 'translateX(100%)' : 'translateX(0)';
-            }
-            
-            overlay.classList.toggle('active');
-            sidebar.classList.toggle('active');
-            
-            // Trap focus in cart
-            trapFocus(sidebar);
-            announceToScreenReader('Cart ' + (sidebar.classList.contains('active') ? 'opened' : 'closed'));
-        }
-
-        function closeCart() {
-            const overlay = document.getElementById('cart-overlay');
-            const sidebar = document.getElementById('cart-sidebar');
-            overlay.classList.remove('active');
-            sidebar.classList.remove('active');
-            
-            // Return focus
-            if (lastFocusedElement) {
-                lastFocusedElement.focus();
-                lastFocusedElement = null;
-            }
-            announceToScreenReader('Cart closed');
-        }
-
         function setCategory(category) {
             state.filters.category = category;
             renderCategories();
@@ -522,130 +913,81 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function showOrderSummary() {
-            if (state.cart.length === 0) return;
-            
+        // Order modal functions
+        function showOrderModal() {
             lastFocusedElement = document.activeElement;
-            const modal = document.getElementById('summary-modal');
-            const itemsContainer = document.getElementById('summary-items');
-            const totalAmount = document.getElementById('summary-total-amount');
-            
-            itemsContainer.innerHTML = state.cart.map(item => {
-                let displayName = item.name;
-                if (item.options && item.options.length > 0) {
-                    const optionNames = item.options.map(opt => opt.name).join(', ');
-                    displayName += ` (${optionNames})`;
-                }
-                
-                return `
-                    <div class="summary-item">
-                        <div class="summary-item-info">
-                            <div class="summary-item-name">${esc(displayName)}</div>
-                            <div class="summary-item-qty">Qty: ${item.qty} × ${formatPrice(item.price)}</div>
-                            ${item.notes ? `<div class="summary-item-notes">${esc(item.notes)}</div>` : ''}
-                        </div>
-                        <div class="summary-item-price">${formatPrice(item.price * item.qty)}</div>
-                    </div>
-                `;
-            }).join('');
-            
-            totalAmount.textContent = formatPrice(cartTotal());
+            const modal = document.getElementById('order-modal');
             modal.classList.add('active');
             
-            // Trap focus in modal
-            trapFocus(modal.querySelector('.summary-content'));
-            announceToScreenReader('Order Summary opened');
+            // Reset form
+            document.getElementById('order-form').reset();
+            
+            trapFocus(modal.querySelector('.order-content'));
+            announceToScreenReader('Order form opened');
         }
 
-        function closeSummary() {
-            document.getElementById('summary-modal').classList.remove('active');
+        function closeOrderModal() {
+            document.getElementById('order-modal').classList.remove('active');
             
-            // Return focus
             if (lastFocusedElement) {
                 lastFocusedElement.focus();
                 lastFocusedElement = null;
             }
-            announceToScreenReader('Order Summary closed');
+            announceToScreenReader('Order form closed');
         }
 
-        function sendPreOrder() {
-            if (state.cart.length === 0) {
-                showToast('El carrito está vacío');
-                return;
+        function submitOrder(formData) {
+            const config = window.elementSdk?.config || defaultConfig;
+            const restaurantName = config.restaurant_name || "Massimo's Pizza";
+            const whatsappNumber = config.whatsapp_number || CONFIG.WHATSAPP;
+            
+            let message = `${restaurantName} — New Order Request\n`;
+            message += `================================\n\n`;
+            message += `👤 Customer: ${formData.name}\n`;
+            message += `📱 Phone: ${formData.phone}\n\n`;
+            message += `📋 ORDER DETAILS:\n`;
+            message += `${formData.orderDetails}\n\n`;
+            
+            if (formData.specialRequests.trim()) {
+                message += `⚠️ SPECIAL REQUESTS:\n`;
+                message += `${formData.specialRequests}\n\n`;
             }
             
-            if (!confirm('¿Enviar pedido a WhatsApp de Massimo?')) return;
-            
-            const config = window.elementSdk?.config || defaultConfig;
-            const restaurantName = CONFIG.STORE_NAME;
-            const whatsappNumber = CONFIG.WHATSAPP;
-            const location = CONFIG.STORE_LOCATION;
-            
-            let message = `🍕 *Nuevo Pedido - ${restaurantName}*\n`;
-            message += `📍 ${location}\n`;
-            message += `---------------------------\n\n`;
-            message += `*PEDIDO:*\n`;
-            
-            state.cart.forEach(item => {
-                let displayName = item.name;
-                if (item.options && item.options.length > 0) {
-                    const optionNames = item.options.map(opt => opt.name).join(', ');
-                    displayName += ` (${optionNames})`;
-                }
-                
-                message += `• ${item.qty}x ${displayName} — ${formatPrice(item.price * item.qty)}\n`;
-                if (item.notes && item.notes.trim()) {
-                    message += `   ↳ Nota: ${item.notes.trim()}\n`;
-                }
-            });
-            
-            message += `\n*TOTAL: ${formatPrice(cartTotal())}*\n`;
-            message += `---------------------------\n\n`;
-            message += `💬 Por favor, confirma disponibilidad y tiempo de preparación.\n`;
-            message += `🌐 Pedido realizado desde: ${CONFIG.SITE_URL}`;
+            message += `================================\n`;
+            message += `Please confirm:\n`;
+            message += `• Item availability\n`;
+            message += `• Total price\n`;
+            message += `• Preparation time\n\n`;
+            message += `Customer will pay on pickup.\n`;
+            message += `Website: ${CONFIG.SITE_URL}`;
             
             const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
             
-            // Limpiar carrito después de enviar el pedido
-            if (confirm('¿Quieres limpiar el carrito después de enviar el pedido?')) {
-                clearCart();
-                showToast('Carrito limpiado - Pedido enviado');
+            closeOrderModal();
+            showToast('Order sent successfully! Massimo will contact you soon.', 'success');
+        }
+
+        // Event handlers
+        function handleGlobalClick(e) {
+            const target = e.target;
+            
+            // Category chips
+            if (target.classList.contains('category-chip')) {
+                const category = target.dataset.category;
+                setCategory(category);
+                return;
             }
         }
 
-        // Initialize app with event listeners
+        // Initialize app
         function initApp() {
-            // Frame detection for embedded environments
-            if (window.self !== window.top) {
-                document.body.classList.add('embedded-frame');
-            }
-            
-            // Listen for cart changes in other tabs
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'massimos_cart_v1') {
-                    state.cart = JSON.parse(e.newValue || '[]');
-                    updateCartUI();
-                }
-            });
-            
-            // Dynamic viewport height handling
-            function setVH() {
-                document.body.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-            }
-            setVH();
-            window.addEventListener('resize', setVH);
-            
-            // Persistent cart save on page unload
-            window.addEventListener('beforeunload', saveCart);
-            
-            // Extract unique categories from menu data
+            // Extract unique categories
             state.categories = [...new Set(state.items.map(item => item.category))];
             
             // Initial render
             renderCategories();
             renderProducts();
-            updateCartUI();
             
             // Setup debounced search
             const debouncedSearch = debounce((query) => {
@@ -657,151 +999,52 @@
                 debouncedSearch(e.target.value);
             });
             
-            // Setup event delegation for dynamic content
+            // Setup event delegation
             document.addEventListener('click', handleGlobalClick);
-            document.addEventListener('change', handleGlobalChange);
             
-            // Close modals when clicking outside
-            document.getElementById('summary-modal').addEventListener('click', (e) => {
-                if (e.target === document.getElementById('summary-modal')) {
-                    closeSummary();
+            // Setup order form
+            document.getElementById('order-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = {
+                    name: document.getElementById('customer-name').value.trim(),
+                    phone: document.getElementById('customer-phone').value.trim(),
+                    orderDetails: document.getElementById('order-details').value.trim(),
+                    specialRequests: document.getElementById('special-requests').value.trim()
+                };
+                
+                // Validation
+                if (!formData.name || !formData.phone || !formData.orderDetails) {
+                    showToast('Please fill in all required fields', 'error');
+                    return;
                 }
+                
+                if (formData.orderDetails.length < 10) {
+                    showToast('Please provide more detailed order information', 'error');
+                    return;
+                }
+                
+                // Disable submit button temporarily
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending...';
+                
+                setTimeout(() => {
+                    submitOrder(formData);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '📱 Send Order for Approval';
+                }, 1000);
             });
             
-            document.getElementById('customize-modal').addEventListener('click', (e) => {
-                if (e.target === document.getElementById('customize-modal')) {
-                    closeCustomize();
+            // Setup modal close when clicking outside
+            document.getElementById('order-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('order-modal')) {
+                    closeOrderModal();
                 }
             });
             
             // Setup logo click
             document.querySelector('.logo').addEventListener('click', scrollToTop);
-            
-            // Setup cart button
-            document.querySelector('.cart-btn').addEventListener('click', toggleCart);
-            
-            // Setup cart overlay
-            document.getElementById('cart-overlay').addEventListener('click', closeCart);
-            
-            // Setup close buttons
-            document.querySelector('.close-cart').addEventListener('click', closeCart);
-            document.querySelector('.close-summary').addEventListener('click', closeSummary);
-            document.querySelector('.close-customize').addEventListener('click', closeCustomize);
-            
-            // Setup cart actions
-            document.getElementById('clear-btn').addEventListener('click', clearCart);
-            document.getElementById('summary-btn').addEventListener('click', showOrderSummary);
-            document.getElementById('preorder-btn').addEventListener('click', sendPreOrder);
-        }
-
-        // Global event handlers using event delegation
-        function handleGlobalClick(e) {
-            // Use closest to support clicks on children inside buttons/elements
-            const target = e.target;
-            const actionEl = target.closest('[data-action], .category-chip, .variant-option, .extra-option');
-            if (!actionEl) return;
-            
-            // Category chips
-            if (actionEl.classList.contains('category-chip')) {
-                const category = actionEl.dataset.category;
-                setCategory(category);
-                return;
-            }
-            
-            // Product actions
-            if (actionEl.dataset.action === 'add-to-cart') {
-                const sku = actionEl.dataset.sku;
-                const product = state.items.find(item => item.sku === sku);
-                if (product) {
-                    // Add visual feedback
-                    actionEl.classList.add('adding');
-                    setTimeout(() => {
-                        actionEl.classList.remove('adding');
-                        actionEl.classList.add('added');
-                        setTimeout(() => actionEl.classList.remove('added'), 1000);
-                    }, 200);
-                    
-                    addToCart(product);
-                }
-                return;
-            }
-            
-            if (actionEl.dataset.action === 'customize') {
-                const sku = actionEl.dataset.sku;
-                const product = state.items.find(item => item.sku === sku);
-                if (product) {
-                    lastFocusedElement = actionEl;
-                    showCustomizeModal(product);
-                }
-                return;
-            }
-            
-            // Customization modal interactions
-            if (actionEl.classList.contains('variant-option')) {
-                const variantIndex = parseInt(actionEl.dataset.variantIndex);
-                if (currentCustomizingProduct && currentCustomizingProduct.variants) {
-                    // Remove previous selection
-                    document.querySelectorAll('.variant-option').forEach(opt => opt.classList.remove('selected'));
-                    actionEl.classList.add('selected');
-                    selectedVariant = currentCustomizingProduct.variants[variantIndex];
-                    updateCustomizeTotal();
-                }
-                return;
-            }
-            
-            if (actionEl.classList.contains('extra-option')) {
-                const extraIndex = parseInt(actionEl.dataset.extraIndex);
-                if (currentCustomizingProduct && currentCustomizingProduct.extras) {
-                    const extra = currentCustomizingProduct.extras[extraIndex];
-                    const isSelected = actionEl.classList.contains('selected');
-                    
-                    if (isSelected) {
-                        actionEl.classList.remove('selected');
-                        selectedExtras = selectedExtras.filter(e => e.name !== extra.name);
-                    } else {
-                        actionEl.classList.add('selected');
-                        selectedExtras.push(extra);
-                    }
-                    updateCustomizeTotal();
-                }
-                return;
-            }
-            
-            // Cart quantity controls
-            if (actionEl.dataset.action === 'increase') {
-                const index = parseInt(actionEl.dataset.index);
-                if (Number.isFinite(index) && state.cart[index]) {
-                    updateQty(index, state.cart[index].qty + 1);
-                }
-                return;
-            }
-            
-            if (actionEl.dataset.action === 'decrease') {
-                const index = parseInt(actionEl.dataset.index);
-                if (Number.isFinite(index) && state.cart[index]) {
-                    updateQty(index, state.cart[index].qty - 1);
-                }
-                return;
-            }
-            
-            if (actionEl.dataset.action === 'remove') {
-                const index = parseInt(actionEl.dataset.index);
-                if (Number.isFinite(index)) removeItem(index);
-                return;
-            }
-        }
-
-        function handleGlobalChange(e) {
-            const target = e.target;
-            
-            // Cart notes with debouncing
-            if (target.classList.contains('cart-notes')) {
-                const index = parseInt(target.dataset.index);
-                clearTimeout(target.notesTimeout);
-                target.notesTimeout = setTimeout(() => {
-                    setNotes(index, target.value);
-                }, 500);
-            }
         }
 
         // Element SDK integration
@@ -829,5 +1072,5 @@
         // Start the app
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'991001c44415cbc0',t:'MTc2MDg3NDA5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9913fddb122fec95',t:'MTc2MDkxNTg3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
