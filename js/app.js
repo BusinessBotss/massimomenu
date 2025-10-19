@@ -131,6 +131,12 @@ function updateLastUpdatedLabel(timestamp){
   if(mins < 1) el.textContent = 'Última actualización: hace unos segundos';
   else if(mins === 1) el.textContent = 'Última actualización: hace 1 minuto';
   else el.textContent = `Última actualización: hace ${mins} minutos`;
+  // Set a tooltip with absolute datetime (localized)
+  try{
+    const dt = new Date(timestamp);
+    const abs = dt.toLocaleString(undefined, { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZoneName:'short' });
+    el.title = `Actualizado: ${abs}`;
+  }catch(e){ el.title = ''; }
 }
 
 // Cart helpers (index/sku tolerant)
