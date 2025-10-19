@@ -24,21 +24,31 @@ let state = { items: MENU_DATA, categories: [], cart: JSON.parse(localStorage.ge
 // Smart menu cache with background refresh
 const MENU_CACHE_KEY = 'massimos_menu_cache_v1';
 const MENU_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Guard to avoid concurrent fetches
+let isFetchingMenu = false;
 
 // Normalize menu items from various response formats
 function normalizeMenuItems(items) {
-  return items.map((row, i) => {
-    // Support different column names from sheets
-    const sku = row.sku || row.SKU || row.id || `sku-${i}`;
-    const name = row.name || row.Nombre || row.title || '';
-    const description = row.description || row.Descripcion || row.desc || '';
-    const price = Number(row.price || row.Precio || row.Price || 0) || 0;
-    const category = row.category || row.Categoria || row.group || 'Uncategorized';
-    const available = (typeof row.available !== 'undefined') ? (row.available === true || row.available === 'true' || row.available === 1 || row.available === '1') : true;
-    const variants = Array.isArray(row.variants) ? row.variants : (row.variants ? JSONparseSafe(row.variants) || [] : []);
-    const extras = Array.isArray(row.extras) ? row.extras : (row.extras ? JSONparseSafe(row.extras) || [] : []);
-    return { sku, name, description, price, category, available, variants, extras };
-  });
+  // Normalize many header variants, and filter out empty / malformed rows
+  const normalized = items
+    .map((row, i) => {
+      // Support various column casings and languages
+      const sku = row.sku || row.SKU || row.id || row.ID || `sku-${i}`;
+      const name = (row.name || row.Name || row.Nombre || row.title || row.Title || '').toString();
+      const description = (row.description || row.Description || row.Descripcion || row.Ingredients || row.ingredients || row.Ingredients || '').toString();
+      const priceRaw = row.price || row.Price || row.Precio || row.PRICE || row.PriceEUR || 0;
+      const price = Number(String(priceRaw).replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
+      const category = (row.category || row.Category || row.Categoria || row.group || '').toString() || 'Uncategorized';
+      const availRaw = (typeof row.available !== 'undefined') ? row.available : (row.Available || row.available || row.disponible || row.Disponible || '');
+      const available = (function(v){ if(v===true) return true; if(v===false) return false; const s = String(v).toLowerCase(); if(['true','yes','sí','si','y','1'].includes(s)) return true; if(['false','no','n','0',''].includes(s)) return false; return true; })(availRaw);
+      const variants = Array.isArray(row.variants) ? row.variants : (row.variants ? JSONparseSafe(row.variants) || [] : []);
+      const extras = Array.isArray(row.extras) ? row.extras : (row.extras ? JSONparseSafe(row.extras) || [] : []);
+      return { sku, name: name.trim(), description: description.trim(), price, category: category.trim(), available, variants, extras };
+    })
+    // Remove rows without a name or rows that look like injected HTML
+    .filter(r => r.name && !r.category.startsWith('<') && !r.name.startsWith('<'));
+
+  return normalized;
 }
 
 // Fetch fresh menu data from API
@@ -64,52 +74,57 @@ async function fetchMenuFromAPI(silent = false) {
 
 // Fetch menu from Google Sheet with small cache + background refresh
 async function fetchMenu(forceBackground = false) {
-  const cacheKey = 'massimo_menu_cache';
-  const ttl = 5 * 60 * 1000; // 5 minutes
+  const cacheKey = MENU_CACHE_KEY;
+  const ttl = MENU_CACHE_TTL;
   const now = Date.now();
 
+  // Prevent overlapping fetches
+  if (isFetchingMenu && !forceBackground) return;
+  isFetchingMenu = true;
+
+  // If we have a recent cache and this is not a forced background refresh, use it
   try {
-    // Check cache
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
     if (cached && now - cached.timestamp < ttl && !forceBackground) {
       console.log('🟢 Cargando menú desde cache');
       state.items = cached.data;
+      // Update UI using cached timestamp
+      try { updateLastUpdatedLabel(cached.timestamp); } catch (e) {}
       renderCategories();
       renderProducts();
       updateCartUI();
 
-      // Background refresh if cache is old
+      // Schedule a background refresh if cache is nearing staleness
       if (now - cached.timestamp > ttl * 0.8) fetchMenu(true);
+      isFetchingMenu = false;
       return;
     }
 
-    // Fetch from API
-    const res = await fetch(CONFIG.WEB_APP_URL);
-    const data = await res.json();
-    if (!Array.isArray(data)) throw new Error('Formato inválido');
+    // Show subtle feedback on the last-updated control
+    const lastEl = document.getElementById('last-updated');
+    if (lastEl && !forceBackground) lastEl.textContent = 'Actualizando...';
 
-    state.items = data.map(item => ({
-      sku: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `sku-${Math.random().toString(36).slice(2,9)}`,
-      category: item.category || 'Uncategorized',
-      name: item.name || item.title || '',
-      description: item.ingredients || item.description || '',
-      price: parseFloat(item.price) || 0,
-      available: item.available === true || String(item.available).toUpperCase() === 'TRUE'
-    }));
+    // Use the shared fetcher which handles normalization and optional spinner
+    const items = await fetchMenuFromAPI(forceBackground);
+    if (!Array.isArray(items) || items.length === 0) throw new Error('No items returned');
 
+    state.items = items;
     // Save cache
     localStorage.setItem(cacheKey, JSON.stringify({ data: state.items, timestamp: now }));
-  // Update last-updated label
-  try{ updateLastUpdatedLabel(now); }catch(e){}
 
-  renderCategories();
-  renderProducts();
-  updateCartUI();
-  showToast('Menú actualizado ✅');
+    // Update last-updated label with the new timestamp
+    try{ updateLastUpdatedLabel(now); }catch(e){}
+
+    renderCategories();
+    renderProducts();
+    updateCartUI();
+    showToast('Menú actualizado ✅');
   } catch (err) {
     console.error('Error al cargar menú:', err);
     showToast('⚠️ No se pudo actualizar el menú. Usando datos locales.');
     // keep existing state.items (fallback)
+  } finally {
+    isFetchingMenu = false;
   }
 }
 
