@@ -983,7 +983,9 @@
             WEB_APP_URL: "https://script.google.com/macros/s/AKfycby5GN_Mra_9gc92A8J3hEnL7XHvyUwpOf3OFivbEfvn8fI02OEfWhYUiOgTB7rvGLUk/exec",
             LOGO_URL: "https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png",
             SITE_URL: "https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1",
-            WHATSAPP: "+34611260259"
+            WHATSAPP: "+34611260259",
+            STORE_NAME: "Massimo's Pizza",
+            STORE_LOCATION: "Magaluf, Mallorca"
         };
 
         // Default config for Element SDK
@@ -1170,8 +1172,11 @@
         }
 
         // Cart functions with SKU support
-        function addToCart(product) {
-            const existingItem = state.cart.find(item => item.sku === product.sku);
+        function addToCart(product, options = []) {
+            const existingItem = state.cart.find(item => 
+                item.sku === product.sku && 
+                JSON.stringify(item.options || []) === JSON.stringify(options)
+            );
             
             if (existingItem) {
                 existingItem.qty += 1;
@@ -1182,20 +1187,40 @@
                     price: product.price,
                     qty: 1,
                     notes: '',
-                    category: product.category
+                    category: product.category,
+                    options: options
                 });
             }
             
             saveCart();
-            showToast('Added to cart');
+            showToast('Añadido al carrito');
+            
+            // Anunciar para lectores de pantalla
+            announceToScreenReader(`${product.name} añadido al carrito`);
         }
 
-        function updateQty(sku, newQty) {
+        function updateQty(identifier, newQty) {
+            // identifier can be either an index (number) or a sku (string)
+            if (typeof identifier === 'number') {
+                const idx = identifier;
+                const item = state.cart[idx];
+                if (!item) return;
+                if (newQty <= 0) {
+                    removeItem(idx);
+                    return;
+                }
+                item.qty = newQty;
+                saveCart();
+                return;
+            }
+
+            // fallback: treat as sku
+            const sku = identifier;
             if (newQty <= 0) {
                 removeItem(sku);
                 return;
             }
-            
+
             const item = state.cart.find(item => item.sku === sku);
             if (item) {
                 item.qty = newQty;
@@ -1203,15 +1228,36 @@
             }
         }
 
-        function setNotes(sku, notes) {
-            const item = state.cart.find(item => item.sku === sku);
+        function setNotes(identifier, notes) {
+            // identifier can be index or sku
+            if (typeof identifier === 'number') {
+                const idx = identifier;
+                if (state.cart[idx]) {
+                    state.cart[idx].notes = notes;
+                    saveCart();
+                }
+                return;
+            }
+
+            const item = state.cart.find(item => item.sku === identifier);
             if (item) {
                 item.notes = notes;
                 saveCart();
             }
         }
 
-        function removeItem(sku) {
+        function removeItem(identifier) {
+            // identifier can be an index or a sku
+            if (typeof identifier === 'number') {
+                const idx = identifier;
+                if (state.cart[idx]) {
+                    state.cart.splice(idx, 1);
+                    saveCart();
+                }
+                return;
+            }
+
+            const sku = identifier;
             state.cart = state.cart.filter(item => item.sku !== sku);
             saveCart();
         }
@@ -1228,8 +1274,10 @@
         // UI functions
         function updateCartUI() {
             const count = state.cart.reduce((total, item) => total + item.qty, 0);
-            document.getElementById('cart-count').textContent = count;
-            document.getElementById('mobile-cart-count').textContent = count;
+            const cartCountEl = document.getElementById('cart-count');
+            if (cartCountEl) cartCountEl.textContent = count;
+            const mobileCartCountEl = document.getElementById('mobile-cart-count');
+            if (mobileCartCountEl) mobileCartCountEl.textContent = count;
             
             const cartContent = document.getElementById('cart-content');
             const cartFooter = document.getElementById('cart-footer');
@@ -1555,17 +1603,22 @@
         }
 
         function sendPreOrder() {
-            if (state.cart.length === 0) return;
+            if (state.cart.length === 0) {
+                showToast('El carrito está vacío');
+                return;
+            }
             
-            if (!confirm('¿Enviar pedido a WhatsApp?')) return;
+            if (!confirm('¿Enviar pedido a WhatsApp de Massimo?')) return;
             
             const config = window.elementSdk?.config || defaultConfig;
-            const restaurantName = config.restaurant_name || "Massimo's Pizza";
-            const whatsappNumber = config.whatsapp_number || CONFIG.WHATSAPP;
+            const restaurantName = CONFIG.STORE_NAME;
+            const whatsappNumber = CONFIG.WHATSAPP;
+            const location = CONFIG.STORE_LOCATION;
             
-            let message = `${restaurantName} — Pre-Order\n`;
-            message += `--------------------------------\n`;
-            message += `Items:\n`;
+            let message = `🍕 *Nuevo Pedido - ${restaurantName}*\n`;
+            message += `📍 ${location}\n`;
+            message += `---------------------------\n\n`;
+            message += `*PEDIDO:*\n`;
             
             state.cart.forEach(item => {
                 let displayName = item.name;
@@ -1574,22 +1627,25 @@
                     displayName += ` (${optionNames})`;
                 }
                 
-                message += `- (x${item.qty}) ${displayName} — ${formatPrice(item.price)}`;
+                message += `• ${item.qty}x ${displayName} — ${formatPrice(item.price * item.qty)}\n`;
                 if (item.notes && item.notes.trim()) {
-                    const truncatedNotes = item.notes.length > 50 ? 
-                        item.notes.substring(0, 50) + '...' : item.notes;
-                    message += ` [${truncatedNotes}]`;
+                    message += `   ↳ Nota: ${item.notes.trim()}\n`;
                 }
-                message += `\n`;
             });
             
-            message += `Total: ${formatPrice(cartTotal())}\n`;
-            message += `--------------------------------\n`;
-            message += `Please confirm availability and preparation time.\n`;
-            message += `Website: ${CONFIG.SITE_URL}`;
+            message += `\n*TOTAL: ${formatPrice(cartTotal())}*\n`;
+            message += `---------------------------\n\n`;
+            message += `💬 Por favor, confirma disponibilidad y tiempo de preparación.\n`;
+            message += `🌐 Pedido realizado desde: ${CONFIG.SITE_URL}`;
             
             const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+            
+            // Limpiar carrito después de enviar el pedido
+            if (confirm('¿Quieres limpiar el carrito después de enviar el pedido?')) {
+                clearCart();
+                showToast('Carrito limpiado - Pedido enviado');
+            }
         }
 
         // Initialize app with event listeners
@@ -1674,26 +1730,29 @@
 
         // Global event handlers using event delegation
         function handleGlobalClick(e) {
+            // Use closest to support clicks on children inside buttons/elements
             const target = e.target;
+            const actionEl = target.closest('[data-action], .category-chip, .variant-option, .extra-option');
+            if (!actionEl) return;
             
             // Category chips
-            if (target.classList.contains('category-chip')) {
-                const category = target.dataset.category;
+            if (actionEl.classList.contains('category-chip')) {
+                const category = actionEl.dataset.category;
                 setCategory(category);
                 return;
             }
             
             // Product actions
-            if (target.dataset.action === 'add-to-cart') {
-                const sku = target.dataset.sku;
+            if (actionEl.dataset.action === 'add-to-cart') {
+                const sku = actionEl.dataset.sku;
                 const product = state.items.find(item => item.sku === sku);
                 if (product) {
                     // Add visual feedback
-                    target.classList.add('adding');
+                    actionEl.classList.add('adding');
                     setTimeout(() => {
-                        target.classList.remove('adding');
-                        target.classList.add('added');
-                        setTimeout(() => target.classList.remove('added'), 1000);
+                        actionEl.classList.remove('adding');
+                        actionEl.classList.add('added');
+                        setTimeout(() => actionEl.classList.remove('added'), 1000);
                     }, 200);
                     
                     addToCart(product);
@@ -1701,40 +1760,40 @@
                 return;
             }
             
-            if (target.dataset.action === 'customize') {
-                const sku = target.dataset.sku;
+            if (actionEl.dataset.action === 'customize') {
+                const sku = actionEl.dataset.sku;
                 const product = state.items.find(item => item.sku === sku);
                 if (product) {
-                    lastFocusedElement = target;
+                    lastFocusedElement = actionEl;
                     showCustomizeModal(product);
                 }
                 return;
             }
             
             // Customization modal interactions
-            if (target.classList.contains('variant-option')) {
-                const variantIndex = parseInt(target.dataset.variantIndex);
+            if (actionEl.classList.contains('variant-option')) {
+                const variantIndex = parseInt(actionEl.dataset.variantIndex);
                 if (currentCustomizingProduct && currentCustomizingProduct.variants) {
                     // Remove previous selection
                     document.querySelectorAll('.variant-option').forEach(opt => opt.classList.remove('selected'));
-                    target.classList.add('selected');
+                    actionEl.classList.add('selected');
                     selectedVariant = currentCustomizingProduct.variants[variantIndex];
                     updateCustomizeTotal();
                 }
                 return;
             }
             
-            if (target.classList.contains('extra-option')) {
-                const extraIndex = parseInt(target.dataset.extraIndex);
+            if (actionEl.classList.contains('extra-option')) {
+                const extraIndex = parseInt(actionEl.dataset.extraIndex);
                 if (currentCustomizingProduct && currentCustomizingProduct.extras) {
                     const extra = currentCustomizingProduct.extras[extraIndex];
-                    const isSelected = target.classList.contains('selected');
+                    const isSelected = actionEl.classList.contains('selected');
                     
                     if (isSelected) {
-                        target.classList.remove('selected');
+                        actionEl.classList.remove('selected');
                         selectedExtras = selectedExtras.filter(e => e.name !== extra.name);
                     } else {
-                        target.classList.add('selected');
+                        actionEl.classList.add('selected');
                         selectedExtras.push(extra);
                     }
                     updateCustomizeTotal();
@@ -1743,25 +1802,25 @@
             }
             
             // Cart quantity controls
-            if (target.dataset.action === 'increase') {
-                const index = parseInt(target.dataset.index);
-                if (state.cart[index]) {
-                    updateQty(null, index, state.cart[index].qty + 1);
+            if (actionEl.dataset.action === 'increase') {
+                const index = parseInt(actionEl.dataset.index);
+                if (Number.isFinite(index) && state.cart[index]) {
+                    updateQty(index, state.cart[index].qty + 1);
                 }
                 return;
             }
             
-            if (target.dataset.action === 'decrease') {
-                const index = parseInt(target.dataset.index);
-                if (state.cart[index]) {
-                    updateQty(null, index, state.cart[index].qty - 1);
+            if (actionEl.dataset.action === 'decrease') {
+                const index = parseInt(actionEl.dataset.index);
+                if (Number.isFinite(index) && state.cart[index]) {
+                    updateQty(index, state.cart[index].qty - 1);
                 }
                 return;
             }
             
-            if (target.dataset.action === 'remove') {
-                const index = parseInt(target.dataset.index);
-                removeItem(index);
+            if (actionEl.dataset.action === 'remove') {
+                const index = parseInt(actionEl.dataset.index);
+                if (Number.isFinite(index)) removeItem(index);
                 return;
             }
         }
