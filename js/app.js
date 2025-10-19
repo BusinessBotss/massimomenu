@@ -2,7 +2,7 @@
 // It expects the partials to be loaded into the DOM before initApp() runs.
 
 const CONFIG = {
-  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzwT3A9-BD1HdJ359qnLmHkobtK7GnTizB8X7M2rcr1icsmnan_L1x8jOVcQma161yg/exec",
+  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzBQ8iGtPriEqaW8k27Bw5IHCIBRUmp__lG68j1b1AusHJOEzp0Zig7q49oeIfpXfZz/exec",
   LOGO_URL: "https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png",
   SITE_URL: "https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1",
   WHATSAPP: "+34611260259",
@@ -16,8 +16,8 @@ function esc(str) { if (typeof str !== 'string') return str; const div = documen
 function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
 function formatPrice(price) { return new Intl.NumberFormat('en',{ style:'currency', currency:'EUR'}).format(price); }
 
-// Menu data (kept inline as fallback)
-const MENU_DATA = [ /* fallback items omitted for brevity */ ];
+// Minimal fallback menu (empty) - primary source is Google Sheet
+const MENU_DATA = [];
 
 let state = { items: MENU_DATA, categories: [], cart: JSON.parse(localStorage.getItem('massimos_cart_v1') || '[]'), filters: { category:'all', q:'' } };
 
@@ -62,71 +62,52 @@ async function fetchMenuFromAPI(silent = false) {
   return normalizeMenuItems(items);
 }
 
-// Main menu loading function with caching
-async function fetchMenu() {
+// Fetch menu from Google Sheet with small cache + background refresh
+async function fetchMenu(forceBackground = false) {
+  const cacheKey = 'massimo_menu_cache';
+  const ttl = 5 * 60 * 1000; // 5 minutes
+  const now = Date.now();
+
   try {
-    // Try to load from cache first
-    const cached = localStorage.getItem(MENU_CACHE_KEY);
-    if (cached) {
-      const { items, timestamp } = JSON.parse(cached);
-      const age = Date.now() - timestamp;
-      
-      if (age < MENU_CACHE_TTL) {
-        // Valid cache: use it and refresh in background
-        state.items = items;
-        state.categories = [...new Set(items.map(i => i.category))];
-        renderCategories();
-        renderProducts();
-        updateCartUI();
-        
-        // Silent background refresh if cache is over 4 minutes old (80% of TTL)
-        if (age > MENU_CACHE_TTL * 0.8) {
-          fetchMenuFromAPI(true)
-            .then(items => {
-              localStorage.setItem(MENU_CACHE_KEY, JSON.stringify({ items, timestamp: Date.now() }));
-              state.items = items;
-              state.categories = [...new Set(items.map(i => i.category))];
-              renderCategories();
-              renderProducts();
-              updateCartUI();
-            })
-            .catch(console.warn);
-        }
-        return true;
-      }
+    // Check cache
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached && now - cached.timestamp < ttl && !forceBackground) {
+      console.log('🟢 Cargando menú desde cache');
+      state.items = cached.data;
+      renderCategories();
+      renderProducts();
+      updateCartUI();
+
+      // Background refresh if cache is old
+      if (now - cached.timestamp > ttl * 0.8) fetchMenu(true);
+      return;
     }
-    
-    // No cache or expired: fetch fresh data
-    const items = await fetchMenuFromAPI(false);
-    
-    // Cache the fresh data
-    localStorage.setItem(MENU_CACHE_KEY, JSON.stringify({
-      items,
-      timestamp: Date.now()
+
+    // Fetch from API
+    const res = await fetch(CONFIG.WEB_APP_URL);
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('Formato inválido');
+
+    state.items = data.map(item => ({
+      sku: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `sku-${Math.random().toString(36).slice(2,9)}`,
+      category: item.category || 'Uncategorized',
+      name: item.name || item.title || '',
+      description: item.ingredients || item.description || '',
+      price: parseFloat(item.price) || 0,
+      available: item.available === true || String(item.available).toUpperCase() === 'TRUE'
     }));
-    
-    // Update UI
-    state.items = items;
-    state.categories = [...new Set(items.map(i => i.category))];
+
+    // Save cache
+    localStorage.setItem(cacheKey, JSON.stringify({ data: state.items, timestamp: now }));
+
     renderCategories();
     renderProducts();
     updateCartUI();
-    showToast('Menú cargado correctamente');
-    return true;
-    
+    showToast('Menú actualizado ✅');
   } catch (err) {
-    console.warn('fetchMenu failed, falling back to MENU_DATA', err);
-    // Clear invalid cache if any
-    try { localStorage.removeItem(MENU_CACHE_KEY); } catch (e) {}
-    
-    // Fallback to MENU_DATA
-    state.items = MENU_DATA;
-    state.categories = [...new Set(state.items.map(i => i.category))];
-    renderCategories();
-    renderProducts();
-    updateCartUI();
-    showToast('No se pudo cargar el menú en vivo. Usando menú local.');
-    return false;
+    console.error('Error al cargar menú:', err);
+    showToast('⚠️ No se pudo actualizar el menú. Usando datos locales.');
+    // keep existing state.items (fallback)
   }
 }
 
@@ -210,7 +191,34 @@ function toggleCart(){ lastFocusedElement=document.activeElement; const overlay=
 function closeCart(){ const overlay=document.getElementById('cart-overlay'); const sidebar=document.getElementById('cart-sidebar'); overlay.classList.remove('active'); sidebar.classList.remove('active'); if(lastFocusedElement){ lastFocusedElement.focus(); lastFocusedElement=null; } announceToScreenReader('Cart closed'); }
 
 // Init
-function initApp(){ if(window.self!==window.top) document.body.classList.add('embedded-frame'); window.addEventListener('storage',(e)=>{ if(e.key==='massimos_cart_v1'){ state.cart=JSON.parse(e.newValue||'[]'); updateCartUI(); } }); function setVH(){ document.body.style.setProperty('--vh', `${window.innerHeight*0.01}px`); } setVH(); window.addEventListener('resize', setVH); window.addEventListener('beforeunload', saveCart); state.categories=[...new Set(state.items.map(i=>i.category))]; renderCategories(); renderProducts(); updateCartUI(); const debouncedSearch = debounce((q)=>{ state.filters.q=q; renderProducts(); },300); const searchInput=document.getElementById('search-input'); if(searchInput) searchInput.addEventListener('input',(e)=>debouncedSearch(e.target.value)); document.addEventListener('click', handleGlobalClick); document.addEventListener('change', handleGlobalChange); const summaryModal=document.getElementById('summary-modal'); if(summaryModal) summaryModal.addEventListener('click',(e)=>{ if(e.target===summaryModal) closeSummary(); }); const customizeModal=document.getElementById('customize-modal'); if(customizeModal) customizeModal.addEventListener('click',(e)=>{ if(e.target===customizeModal) closeCustomize(); }); const logo=document.getElementById('main-logo'); if(logo) logo.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'})); const cartBtn=document.getElementById('open-cart'); if(cartBtn) cartBtn.addEventListener('click', toggleCart); const cartOverlay=document.getElementById('cart-overlay'); if(cartOverlay) cartOverlay.addEventListener('click', closeCart); const closeCartBtn=document.querySelector('.close-cart'); if(closeCartBtn) closeCartBtn.addEventListener('click', closeCart); const closeSummaryBtn=document.querySelector('.close-summary'); if(closeSummaryBtn) closeSummaryBtn.addEventListener('click', closeSummary); const closeCustomizeBtn=document.querySelector('.close-customize'); if(closeCustomizeBtn) closeCustomizeBtn.addEventListener('click', closeCustomize); const clearBtn=document.getElementById('clear-btn'); if(clearBtn) clearBtn.addEventListener('click', clearCart); const summaryBtn=document.getElementById('summary-btn'); if(summaryBtn) summaryBtn.addEventListener('click', showOrderSummary); const preorderBtn=document.getElementById('preorder-btn'); if(preorderBtn) preorderBtn.addEventListener('click', sendPreOrder); }
+async function initApp(){
+  if(window.self!==window.top) document.body.classList.add('embedded-frame');
+
+  // Ensure menu is loaded before wiring interactions
+  await fetchMenu();
+
+  window.addEventListener('storage',(e)=>{ if(e.key==='massimos_cart_v1'){ state.cart=JSON.parse(e.newValue||'[]'); updateCartUI(); } });
+  function setVH(){ document.body.style.setProperty('--vh', `${window.innerHeight*0.01}px`); }
+  setVH(); window.addEventListener('resize', setVH); window.addEventListener('beforeunload', saveCart);
+
+  // Ensure categories are derived from the loaded items
+  state.categories=[...new Set(state.items.map(i=>i.category))];
+
+  const debouncedSearch = debounce((q)=>{ state.filters.q=q; renderProducts(); },300);
+  const searchInput=document.getElementById('search-input'); if(searchInput) searchInput.addEventListener('input',(e)=>debouncedSearch(e.target.value));
+  document.addEventListener('click', handleGlobalClick); document.addEventListener('change', handleGlobalChange);
+  const summaryModal=document.getElementById('summary-modal'); if(summaryModal) summaryModal.addEventListener('click',(e)=>{ if(e.target===summaryModal) closeSummary(); });
+  const customizeModal=document.getElementById('customize-modal'); if(customizeModal) customizeModal.addEventListener('click',(e)=>{ if(e.target===customizeModal) closeCustomize(); });
+  const logo=document.getElementById('main-logo'); if(logo) logo.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+  const cartBtn=document.getElementById('open-cart'); if(cartBtn) cartBtn.addEventListener('click', toggleCart);
+  const cartOverlay=document.getElementById('cart-overlay'); if(cartOverlay) cartOverlay.addEventListener('click', closeCart);
+  const closeCartBtn=document.querySelector('.close-cart'); if(closeCartBtn) closeCartBtn.addEventListener('click', closeCart);
+  const closeSummaryBtn=document.querySelector('.close-summary'); if(closeSummaryBtn) closeSummaryBtn.addEventListener('click', closeSummary);
+  const closeCustomizeBtn=document.querySelector('.close-customize'); if(closeCustomizeBtn) closeCustomizeBtn.addEventListener('click', closeCustomize);
+  const clearBtn=document.getElementById('clear-btn'); if(clearBtn) clearBtn.addEventListener('click', clearCart);
+  const summaryBtn=document.getElementById('summary-btn'); if(summaryBtn) summaryBtn.addEventListener('click', showOrderSummary);
+  const preorderBtn=document.getElementById('preorder-btn'); if(preorderBtn) preorderBtn.addEventListener('click', sendPreOrder);
+}
 
 // Small helper to load partials
 async function loadPartial(path, containerSelector){ try{ const res=await fetch(path); if(!res.ok) throw new Error('Failed to load '+path); const html=await res.text(); document.querySelector(containerSelector).innerHTML = html; } catch(e){ console.error('Partial load error',e); } }
@@ -267,9 +275,8 @@ async function bootstrap(){ // load header, menu, footer and then init
     // Important: attach global functions to window so inline handlers (onclick attributes) work for now
     window.toggleCart = toggleCart; window.closeCart = closeCart; window.clearCart = clearCart; window.showOrderSummary = showOrderSummary; window.sendPreOrder = sendPreOrder; window.closeCustomize = closeCustomize; window.addCustomizedItem = addCustomizedItem;
 
-    // Try to load live menu, then initialize the app
-    await fetchMenu();
-    initApp();
+  // Initialize the app (initApp will load the menu first)
+  await initApp();
 
     // Add manual refresh button handler
     const refreshBtn = document.getElementById('refresh-menu-btn');
@@ -277,17 +284,7 @@ async function bootstrap(){ // load header, menu, footer and then init
       refreshBtn.addEventListener('click', async () => {
         refreshBtn.disabled = true;
         refreshBtn.textContent = 'Refreshing...';
-        await fetchMenuFromAPI(false)
-          .then(items => {
-            localStorage.setItem('massimos_menu_cache_v1', JSON.stringify({ items, timestamp: Date.now() }));
-            state.items = items;
-            state.categories = [...new Set(items.map(i => i.category))];
-            renderCategories();
-            renderProducts();
-            updateCartUI();
-            showToast('Menú actualizado');
-          })
-          .catch(()=>showToast('No se pudo actualizar el menú.'));
+        await fetchMenu();
         refreshBtn.disabled = false;
         refreshBtn.textContent = '🔄 Refresh menu';
       });
