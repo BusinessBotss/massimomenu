@@ -39,6 +39,20 @@
             height: 100%;
         }
 
+        /* Frame-adaptive rendering */
+        .embedded-frame .cart-sidebar,
+        .embedded-frame .summary-modal {
+            position: absolute;
+            height: auto;
+            min-height: 100vh;
+            overflow-y: visible;
+        }
+
+        /* Touch optimization */
+        button, .category-chip {
+            touch-action: manipulation;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -56,13 +70,14 @@
 
         .header-content {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            padding: 15px 0;
+            padding: 20px 0;
+            position: relative;
         }
 
         .logo {
-            height: 50px;
+            height: 80px;
             cursor: pointer;
             transition: transform 0.3s ease;
         }
@@ -72,61 +87,13 @@
         }
 
         .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .language-selector {
-            position: relative;
-        }
-
-        .language-btn {
-            background: var(--green);
-            color: var(--white);
-            border: none;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .language-btn:hover {
-            background: var(--red);
-            transform: translateY(-2px);
-        }
-
-        .language-dropdown {
             position: absolute;
-            top: 100%;
             right: 0;
-            background: var(--white);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px var(--shadow);
-            padding: 10px 0;
-            min-width: 120px;
-            display: none;
-            z-index: 200;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
-        .language-dropdown.active {
-            display: block;
-        }
 
-        .language-option {
-            padding: 10px 20px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-            font-weight: 500;
-        }
-
-        .language-option:hover {
-            background: var(--cream);
-        }
 
         .cart-btn {
             background: var(--red);
@@ -777,8 +744,40 @@
             opacity: 1;
         }
 
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus management */
+        .focus-trap {
+            outline: 2px solid var(--green);
+            outline-offset: 2px;
+        }
+
+        button:focus,
+        input:focus,
+        textarea:focus,
+        .category-chip:focus {
+            outline: 2px solid var(--green);
+            outline-offset: 2px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
+            html, body {
+                font-size: 15px;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+
             .container {
                 padding: 0 15px;
             }
@@ -800,6 +799,10 @@
                 right: -100%;
             }
 
+            .cart-sidebar.active {
+                right: 0;
+            }
+
             .products-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
@@ -807,6 +810,7 @@
 
             .product-card {
                 padding: 20px;
+                margin-bottom: 10px;
             }
 
             .categories-list {
@@ -819,6 +823,8 @@
             }
 
             .summary-content {
+                width: 95%;
+                max-height: 85vh;
                 margin: 10px;
                 padding: 20px;
             }
@@ -839,6 +845,16 @@
                 width: 100%;
             }
         }
+
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 1300px;
+            }
+            
+            .product-card {
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+        }
     </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
@@ -848,26 +864,7 @@
   <header class="header">
    <div class="container">
     <div class="header-content"><img src="https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png" alt="Massimo's Pizza" class="logo" onclick="scrollToTop()">
-     <div class="header-actions">
-      <div class="language-selector"><button class="language-btn" onclick="toggleLanguageDropdown()"> 🌐 <span id="current-lang">ES</span> ▼ </button>
-       <div class="language-dropdown" id="language-dropdown">
-        <div class="language-option" onclick="changeLanguage('es')">
-         Español
-        </div>
-        <div class="language-option" onclick="changeLanguage('en')">
-         English
-        </div>
-        <div class="language-option" onclick="changeLanguage('fr')">
-         Français
-        </div>
-        <div class="language-option" onclick="changeLanguage('de')">
-         Deutsch
-        </div>
-        <div class="language-option" onclick="changeLanguage('it')">
-         Italiano
-        </div>
-       </div>
-      </div><button class="cart-btn" onclick="toggleCart()"> 🛒 <span id="cart-text">Carrito</span> <span class="cart-count" id="cart-count">0</span> </button>
+     <div class="header-actions"><button class="cart-btn" onclick="toggleCart()"> 🛒 <span id="cart-text">Cart</span> <span class="cart-count" id="cart-count">0</span> </button>
      </div>
     </div>
    </div>
@@ -875,7 +872,7 @@
   <main>
    <section class="search-section">
     <div class="container">
-     <div class="search-container"><input type="text" class="search-input" id="search-input" placeholder="Buscar productos..."> <span class="search-icon">🔍</span>
+     <div class="search-container"><input type="text" class="search-input" id="search-input" placeholder="Search products..."> <span class="search-icon">🔍</span>
      </div>
     </div>
    </section>
@@ -884,7 +881,7 @@
      <div class="categories-scroll">
       <div class="categories-list" id="categories-list">
        <div class="category-chip active" data-category="all">
-        Todos
+        All
        </div>
       </div>
      </div>
@@ -904,57 +901,80 @@
    <div class="container">
     <div class="footer-content">
      <h3 class="footer-title">Massimo's Pizza</h3>
-     <div class="footer-links"><a href="https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1" target="_blank" rel="noopener noreferrer" class="footer-link"> 🌐 Visitar Web Oficial </a> <a href="tel:+34611260259" class="footer-link"> 📞 Llamar </a> <a href="https://wa.me/34611260259" target="_blank" rel="noopener noreferrer" class="footer-link"> 📱 WhatsApp </a>
+     <div class="footer-links"><a href="https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1" target="_blank" rel="noopener noreferrer" class="footer-link"> 🌐 Visit Official Website </a> <a href="tel:+34611260259" class="footer-link"> 📞 Call </a> <a href="https://wa.me/34611260259" target="_blank" rel="noopener noreferrer" class="footer-link"> 📱 WhatsApp </a>
      </div>
-     <p>© 2024 Massimo's Pizza. Magaluf, Mallorca.</p>
+     <p>© 2026 Massimo's Pizza. Magaluf, Mallorca.</p>
     </div>
    </div>
   </footer><!-- Cart Sidebar -->
   <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
   <div class="cart-sidebar" id="cart-sidebar">
    <div class="cart-header">
-    <h3 class="cart-title" id="cart-title">Carrito</h3><button class="close-cart" onclick="closeCart()">✕</button>
+    <h3 class="cart-title" id="cart-title">Cart</h3><button class="close-cart" onclick="closeCart()">✕</button>
    </div>
    <div class="cart-content" id="cart-content">
     <div class="cart-empty" id="cart-empty">
      <div style="font-size: 48px; color: var(--neutral); margin-bottom: 20px;">
       🛒
      </div>
-     <p>Tu carrito está vacío</p>
+     <p>Your cart is empty</p>
     </div>
    </div>
    <div class="cart-footer" id="cart-footer" style="display: none;">
     <div class="cart-total"><span class="total-label" id="total-label">Subtotal:</span> <span class="total-amount" id="total-amount">0,00 €</span>
     </div>
-    <div class="cart-actions"><button class="clear-cart" onclick="clearCart()" id="clear-btn">Vaciar carrito</button>
-     <div class="order-actions"><button class="summary-btn" onclick="showOrderSummary()" id="summary-btn"> 📋 Ver Resumen del Pedido </button> <button class="preorder-btn" onclick="sendPreOrder()" id="preorder-btn"> 📱 Hacer Pre-Pedido por WhatsApp </button>
+    <div class="cart-actions"><button class="clear-cart" onclick="clearCart()" id="clear-btn">Clear cart</button>
+     <div class="order-actions"><button class="summary-btn" onclick="showOrderSummary()" id="summary-btn"> 📋 View Order Summary </button> <button class="preorder-btn" onclick="sendPreOrder()" id="preorder-btn"> 📱 Make Pre-Order via WhatsApp </button>
      </div>
+    </div>
+   </div>
+  </div><!-- Customization Modal -->
+  <div class="customize-modal" id="customize-modal">
+   <div class="customize-content">
+    <div class="customize-header">
+     <h3 class="customize-title" id="customize-title">Customize Your Order</h3><button class="close-customize" onclick="closeCustomize()">✕</button>
+    </div>
+    <div id="customize-variants" class="customize-section" style="display: none;">
+     <h4>Size Options</h4>
+     <div id="variants-list"></div>
+    </div>
+    <div id="customize-extras" class="customize-section" style="display: none;">
+     <h4>Extra Toppings</h4>
+     <div id="extras-list"></div>
+    </div>
+    <div class="customize-section">
+     <h4>Special Instructions</h4><textarea class="customize-notes" id="customize-notes" placeholder="Any special requests or modifications..."></textarea>
+    </div>
+    <div class="customize-footer">
+     <div class="customize-total" id="customize-total">
+      €7.00
+     </div><button class="add-custom-btn" id="add-custom-btn" onclick="addCustomizedItem()"> Add to Cart </button>
     </div>
    </div>
   </div><!-- Order Summary Modal -->
   <div class="summary-modal" id="summary-modal">
    <div class="summary-content">
     <div class="summary-header">
-     <h3 class="summary-title" id="summary-modal-title">Resumen del Pedido</h3><button class="close-summary" onclick="closeSummary()">✕</button>
+     <h3 class="summary-title" id="summary-modal-title">Order Summary</h3><button class="close-summary" onclick="closeSummary()">✕</button>
     </div>
     <div id="summary-items"></div>
     <div class="summary-total"><span class="summary-total-label" id="summary-total-label">Total:</span> <span class="summary-total-amount" id="summary-total-amount">0,00 €</span>
     </div>
     <div class="summary-instructions">
-     <h4 id="summary-instructions-title">¿Cómo usar este resumen?</h4>
-     <p id="summary-instructions-text">Puedes usar este resumen para hacer tu pedido en persona con Massimo, o hacer un pre-pedido por WhatsApp para recoger o delivery.</p>
+     <h4 id="summary-instructions-title">How to use this summary?</h4>
+     <p id="summary-instructions-text">You can use this summary to place your order in person with Massimo, or make a pre-order via WhatsApp for pickup or delivery.</p>
     </div>
    </div>
-  </div><!-- Toast -->
-  <div class="toast" id="toast"></div>
+  </div><!-- Toast with accessibility -->
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div><!-- Screen reader announcements -->
+  <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
   <script>
         // Configuration
         const CONFIG = {
             WEB_APP_URL: "https://script.google.com/macros/s/AKfycby5GN_Mra_9gc92A8J3hEnL7XHvyUwpOf3OFivbEfvn8fI02OEfWhYUiOgTB7rvGLUk/exec",
             LOGO_URL: "https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png",
             SITE_URL: "https://school-1tryout.my.canva.site/welcome-to-massimo-s-pizza/#page-1",
-            WHATSAPP: "+34611260259",
-            DEFAULT_LANG: "es"
+            WHATSAPP: "+34611260259"
         };
 
         // Default config for Element SDK
@@ -963,144 +983,113 @@
             whatsapp_number: "+34611260259"
         };
 
-        // Complete menu data from all blocks
+        // Security: Content escaping function
+        function esc(str) {
+            if (typeof str !== 'string') return str;
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Performance: Debounce utility
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Complete menu data from all blocks with unique SKUs
         const MENU_DATA = [
             // Block 1 - Pizzas
-            {"category":"Pizza","name":"Margherita","description":"Tomato sauce, mozzarella, basil or oregano","price":7,"available":true},
-            {"category":"Pizza","name":"Marinara","description":"Tomato sauce, fresh garlic, oregano, EVOO","price":7,"available":true},
-            {"category":"Pizza","name":"Diavola","description":"Tomato sauce, mozzarella, spicy chorizo","price":9,"available":true},
-            {"category":"Pizza","name":"Prosciutto e Funghi","description":"Tomato sauce, cooked ham, mushrooms","price":9,"available":true},
-            {"category":"Pizza","name":"Quattro Formaggi","description":"Tomato sauce, mozzarella, gorgonzola, cheddar, gouda","price":10,"available":true},
-            {"category":"Pizza","name":"Pepperoni","description":"Tomato sauce, mozzarella, pepperoni","price":9,"available":true},
-            {"category":"Pizza","name":"Tuna & Onion","description":"Tomato sauce, mozzarella, tuna, red onion","price":9,"available":true},
-            {"category":"Pizza","name":"Hawaiian","description":"Tomato sauce, mozzarella, cooked ham, pineapple","price":9,"available":true},
-            {"category":"Pizza","name":"Capricciosa","description":"Tomato sauce, mozzarella, cooked ham, egg","price":10,"available":true},
-            {"category":"Pizza","name":"Napoli","description":"Tomato sauce, anchovies, capers, oregano, EVOO","price":9,"available":true},
-            {"category":"Pizza","name":"Vegetarian","description":"Tomato sauce, mozzarella, zucchini, eggplant, bell pepper, mushrooms, basil","price":9,"available":true},
-            {"category":"White Pizza","name":"Carbonara","description":"Mozzarella, cream, mushrooms, onion, bacon","price":10,"available":true},
-            {"category":"White Pizza","name":"Mimosa","description":"Mozzarella, cooked ham, sweetcorn","price":9,"available":true},
-            {"category":"White Pizza","name":"Boscaiola","description":"Bacon, cooked ham, mushrooms, peas","price":9,"available":true},
-            {"category":"White Pizza","name":"Vegetarian Bianca","description":"Mozzarella, bell pepper, zucchini, mushrooms, black olives, sweetcorn, basil","price":10,"available":true},
-            {"category":"Special Pizza","name":"Mallorquina","description":"Tomato sauce, sobrasada, goat cheese, honey","price":11,"available":true},
-            {"category":"Special Pizza","name":"Italian Classic","description":"Tomato sauce, mozzarella, cherry tomatoes, arugula, serrano ham, buffalo mozzarella","price":12,"available":true},
-            {"category":"Special Pizza","name":"Carnívora","description":"Tomato sauce, mozzarella, ground beef, chicken, ham, bacon, pepperoni, sausage","price":13,"available":true},
-            {"category":"Special Pizza","name":"Cecina","description":"Mozzarella, cherry tomatoes, arugula, cecina, parmesan flakes","price":12,"available":true},
-            {"category":"Special Pizza","name":"6 Cheeses","description":"Mozzarella, cheddar, gorgonzola, parmesan, buffalo mozzarella","price":12,"available":true},
+            {"sku":"PIZ001","category":"Pizza","name":"Margherita","description":"Tomato sauce, mozzarella, basil or oregano","price":7,"available":true},
+            {"sku":"PIZ002","category":"Pizza","name":"Marinara","description":"Tomato sauce, fresh garlic, oregano, EVOO","price":7,"available":true},
+            {"sku":"PIZ003","category":"Pizza","name":"Diavola","description":"Tomato sauce, mozzarella, spicy chorizo","price":9,"available":true},
+            {"sku":"PIZ004","category":"Pizza","name":"Prosciutto e Funghi","description":"Tomato sauce, cooked ham, mushrooms","price":9,"available":true},
+            {"sku":"PIZ005","category":"Pizza","name":"Quattro Formaggi","description":"Tomato sauce, mozzarella, gorgonzola, cheddar, gouda","price":10,"available":true},
+            {"sku":"PIZ006","category":"Pizza","name":"Pepperoni","description":"Tomato sauce, mozzarella, pepperoni","price":9,"available":true},
+            {"sku":"PIZ007","category":"Pizza","name":"Tuna & Onion","description":"Tomato sauce, mozzarella, tuna, red onion","price":9,"available":true},
+            {"sku":"PIZ008","category":"Pizza","name":"Hawaiian","description":"Tomato sauce, mozzarella, cooked ham, pineapple","price":9,"available":true},
+            {"sku":"PIZ009","category":"Pizza","name":"Capricciosa","description":"Tomato sauce, mozzarella, cooked ham, egg","price":10,"available":true},
+            {"sku":"PIZ010","category":"Pizza","name":"Napoli","description":"Tomato sauce, anchovies, capers, oregano, EVOO","price":9,"available":true},
+            {"sku":"PIZ011","category":"Pizza","name":"Vegetarian","description":"Tomato sauce, mozzarella, zucchini, eggplant, bell pepper, mushrooms, basil","price":9,"available":true},
+            {"sku":"WPZ001","category":"White Pizza","name":"Carbonara","description":"Mozzarella, cream, mushrooms, onion, bacon","price":10,"available":true},
+            {"sku":"WPZ002","category":"White Pizza","name":"Mimosa","description":"Mozzarella, cooked ham, sweetcorn","price":9,"available":true},
+            {"sku":"WPZ003","category":"White Pizza","name":"Boscaiola","description":"Bacon, cooked ham, mushrooms, peas","price":9,"available":true},
+            {"sku":"WPZ004","category":"White Pizza","name":"Vegetarian Bianca","description":"Mozzarella, bell pepper, zucchini, mushrooms, black olives, sweetcorn, basil","price":10,"available":true},
+            {"sku":"SPZ001","category":"Special Pizza","name":"Mallorquina","description":"Tomato sauce, sobrasada, goat cheese, honey","price":11,"available":true},
+            {"sku":"SPZ002","category":"Special Pizza","name":"Italian Classic","description":"Tomato sauce, mozzarella, cherry tomatoes, arugula, serrano ham, buffalo mozzarella","price":12,"available":true},
+            {"sku":"SPZ003","category":"Special Pizza","name":"Carnívora","description":"Tomato sauce, mozzarella, ground beef, chicken, ham, bacon, pepperoni, sausage","price":13,"available":true},
+            {"sku":"SPZ004","category":"Special Pizza","name":"Cecina","description":"Mozzarella, cherry tomatoes, arugula, cecina, parmesan flakes","price":12,"available":true},
+            {"sku":"SPZ005","category":"Special Pizza","name":"6 Cheeses","description":"Mozzarella, cheddar, gorgonzola, parmesan, buffalo mozzarella","price":12,"available":true},
             
             // Block 2 - Appetizers & Burgers
-            {"category":"Appetizer","name":"Garlic Bread","description":"Fresh garlic bread","price":4,"available":true},
-            {"category":"Appetizer","name":"French Fries","description":"Golden crispy fries","price":4,"available":true},
-            {"category":"Appetizer","name":"Onion Rings (7)","description":"Battered onion rings (7 pcs)","price":5,"available":true},
-            {"category":"Appetizer","name":"Chicken Nuggets (7)","description":"Breaded chicken nuggets (7 pcs)","price":5,"available":true},
-            {"category":"Appetizer","name":"Chicken Fingers (7)","description":"Crispy chicken fingers (7 pcs)","price":5,"available":true},
-            {"category":"Appetizer","name":"Chicken Wings (7)","description":"Spicy chicken wings (7 pcs)","price":6,"available":true},
-            {"category":"Beef Burger","name":"Classic","description":"Lettuce, tomato, beef patty","price":7,"available":true},
-            {"category":"Beef Burger","name":"Double","description":"Lettuce, tomato, double beef patty","price":9,"available":true},
-            {"category":"Beef Burger","name":"With Cheese","description":"Lettuce, tomato, beef patty, cheese","price":8,"available":true},
-            {"category":"Beef Burger","name":"Double with Cheese","description":"Lettuce, tomato, double beef patty, cheese","price":10,"available":true},
-            {"category":"Beef Burger","name":"Crispy Bacon","description":"Lettuce, tomato, beef patty, cheese, bacon","price":9,"available":true},
-            {"category":"Beef Burger","name":"Double Crispy Bacon","description":"Lettuce, tomato, double beef patty, cheese, bacon","price":11,"available":true},
-            {"category":"Beef Burger","name":"Massimo's","description":"Lettuce, tomato, beef, cheese, bacon, egg, crispy onion","price":12,"available":true},
-            {"category":"Beef Burger","name":"Massimo's Double","description":"Same with double beef patty","price":14,"available":true},
-            {"category":"Chicken Burger","name":"Classic Chicken","description":"Lettuce, tomato, chicken patty","price":7,"available":true},
-            {"category":"Chicken Burger","name":"Double Chicken","description":"Lettuce, tomato, double chicken patty","price":9,"available":true},
-            {"category":"Chicken Burger","name":"With Cheese","description":"Lettuce, tomato, chicken patty, cheese","price":8,"available":true},
-            {"category":"Chicken Burger","name":"Double with Cheese","description":"Lettuce, tomato, double chicken patty, cheese","price":10,"available":true},
-            {"category":"Chicken Burger","name":"Crispy Bacon","description":"Lettuce, tomato, chicken, cheese, bacon","price":9,"available":true},
-            {"category":"Chicken Burger","name":"Double Crispy Bacon","description":"Lettuce, tomato, double chicken, cheese, bacon","price":11,"available":true},
+            {"sku":"APP001","category":"Appetizer","name":"Garlic Bread","description":"Fresh garlic bread","price":4,"available":true},
+            {"sku":"APP002","category":"Appetizer","name":"French Fries","description":"Golden crispy fries","price":4,"available":true},
+            {"sku":"APP003","category":"Appetizer","name":"Onion Rings (7)","description":"Battered onion rings (7 pcs)","price":5,"available":true},
+            {"sku":"APP004","category":"Appetizer","name":"Chicken Nuggets (7)","description":"Breaded chicken nuggets (7 pcs)","price":5,"available":true},
+            {"sku":"APP005","category":"Appetizer","name":"Chicken Fingers (7)","description":"Crispy chicken fingers (7 pcs)","price":5,"available":true},
+            {"sku":"APP006","category":"Appetizer","name":"Chicken Wings (7)","description":"Spicy chicken wings (7 pcs)","price":6,"available":true},
+            {"sku":"BBG001","category":"Beef Burger","name":"Classic","description":"Lettuce, tomato, beef patty","price":7,"available":true},
+            {"sku":"BBG002","category":"Beef Burger","name":"Double","description":"Lettuce, tomato, double beef patty","price":9,"available":true},
+            {"sku":"BBG003","category":"Beef Burger","name":"With Cheese","description":"Lettuce, tomato, beef patty, cheese","price":8,"available":true},
+            {"sku":"BBG004","category":"Beef Burger","name":"Double with Cheese","description":"Lettuce, tomato, double beef patty, cheese","price":10,"available":true},
+            {"sku":"BBG005","category":"Beef Burger","name":"Crispy Bacon","description":"Lettuce, tomato, beef patty, cheese, bacon","price":9,"available":true},
+            {"sku":"BBG006","category":"Beef Burger","name":"Double Crispy Bacon","description":"Lettuce, tomato, double beef patty, cheese, bacon","price":11,"available":true},
+            {"sku":"BBG007","category":"Beef Burger","name":"Massimo's","description":"Lettuce, tomato, beef, cheese, bacon, egg, crispy onion","price":12,"available":true},
+            {"sku":"BBG008","category":"Beef Burger","name":"Massimo's Double","description":"Same with double beef patty","price":14,"available":true},
+            {"sku":"CBG001","category":"Chicken Burger","name":"Classic Chicken","description":"Lettuce, tomato, chicken patty","price":7,"available":true},
+            {"sku":"CBG002","category":"Chicken Burger","name":"Double Chicken","description":"Lettuce, tomato, double chicken patty","price":9,"available":true},
+            {"sku":"CBG003","category":"Chicken Burger","name":"With Cheese","description":"Lettuce, tomato, chicken patty, cheese","price":8,"available":true},
+            {"sku":"CBG004","category":"Chicken Burger","name":"Double with Cheese","description":"Lettuce, tomato, double chicken patty, cheese","price":10,"available":true},
+            {"sku":"CBG005","category":"Chicken Burger","name":"Crispy Bacon","description":"Lettuce, tomato, chicken, cheese, bacon","price":9,"available":true},
+            {"sku":"CBG006","category":"Chicken Burger","name":"Double Crispy Bacon","description":"Lettuce, tomato, double chicken, cheese, bacon","price":11,"available":true},
             
             // Block 3 - Extended items
-            {"category":"Chicken Burger","name":"Massimo's Chicken","description":"Lettuce, tomato, chicken, cheese, bacon, egg, crispy onion","price":12,"available":true},
-            {"category":"Chicken Burger","name":"Massimo's Chicken Double","description":"Same with double chicken patty","price":14,"available":true},
-            {"category":"Veggie Burger","name":"Veggie","description":"Lettuce, tomato, veggie patty","price":7,"available":true},
-            {"category":"Veggie Burger","name":"With Cheese","description":"Lettuce, tomato, veggie patty, cheese","price":8,"available":true},
-            {"category":"Wrap","name":"Grilled Chicken","description":"Lettuce, tomato, mayo, grilled chicken, cheese","price":7,"available":true},
-            {"category":"Wrap","name":"Crispy Chicken","description":"Lettuce, tomato, mayo, breaded chicken, cheese","price":7,"available":true},
-            {"category":"Wrap","name":"Vegetarian","description":"Roasted seasonal vegetables","price":7,"available":true},
-            {"category":"Wrap","name":"Tuna","description":"Lettuce, tomato, cheese or sweetcorn","price":7,"available":true},
-            {"category":"Panuozzo","name":"Caprese","description":"Lettuce, tomato, buffalo mozzarella","price":8,"available":true},
-            {"category":"Panuozzo","name":"Serrano","description":"Arugula, tomato, serrano ham, buffalo mozzarella","price":9,"available":true},
-            {"category":"Panuozzo","name":"Vegetarian","description":"Roasted vegetables, buffalo mozzarella","price":8,"available":true},
-            {"category":"Calzone","name":"Classic","description":"Cooked ham, mushrooms, mozzarella, oregano","price":9,"available":true},
-            {"category":"Calzone","name":"Capricciosa","description":"Black olives, mushrooms, cooked ham, mozzarella","price":9,"available":true},
-            {"category":"Calzone","name":"Meat Lover","description":"Chicken, beef, pepperoni, cooked ham, sausage, mozzarella","price":11,"available":true},
-            {"category":"Calzone","name":"Vegetarian","description":"Roasted seasonal vegetables, cheese","price":9,"available":true},
+            {"sku":"CBG007","category":"Chicken Burger","name":"Massimo's Chicken","description":"Lettuce, tomato, chicken, cheese, bacon, egg, crispy onion","price":12,"available":true},
+            {"sku":"CBG008","category":"Chicken Burger","name":"Massimo's Chicken Double","description":"Same with double chicken patty","price":14,"available":true},
+            {"sku":"VBG001","category":"Veggie Burger","name":"Veggie","description":"Lettuce, tomato, veggie patty","price":7,"available":true},
+            {"sku":"VBG002","category":"Veggie Burger","name":"With Cheese","description":"Lettuce, tomato, veggie patty, cheese","price":8,"available":true},
+            {"sku":"WRP001","category":"Wrap","name":"Grilled Chicken","description":"Lettuce, tomato, mayo, grilled chicken, cheese","price":7,"available":true},
+            {"sku":"WRP002","category":"Wrap","name":"Crispy Chicken","description":"Lettuce, tomato, mayo, breaded chicken, cheese","price":7,"available":true},
+            {"sku":"WRP003","category":"Wrap","name":"Vegetarian","description":"Roasted seasonal vegetables","price":7,"available":true},
+            {"sku":"WRP004","category":"Wrap","name":"Tuna","description":"Lettuce, tomato, cheese or sweetcorn","price":7,"available":true},
+            {"sku":"PAN001","category":"Panuozzo","name":"Caprese","description":"Lettuce, tomato, buffalo mozzarella","price":8,"available":true},
+            {"sku":"PAN002","category":"Panuozzo","name":"Serrano","description":"Arugula, tomato, serrano ham, buffalo mozzarella","price":9,"available":true},
+            {"sku":"PAN003","category":"Panuozzo","name":"Vegetarian","description":"Roasted vegetables, buffalo mozzarella","price":8,"available":true},
+            {"sku":"CAL001","category":"Calzone","name":"Classic","description":"Cooked ham, mushrooms, mozzarella, oregano","price":9,"available":true},
+            {"sku":"CAL002","category":"Calzone","name":"Capricciosa","description":"Black olives, mushrooms, cooked ham, mozzarella","price":9,"available":true},
+            {"sku":"CAL003","category":"Calzone","name":"Meat Lover","description":"Chicken, beef, pepperoni, cooked ham, sausage, mozzarella","price":11,"available":true},
+            {"sku":"CAL004","category":"Calzone","name":"Vegetarian","description":"Roasted seasonal vegetables, cheese","price":9,"available":true},
             
             // Block 4 - Homemade & Desserts
-            {"category":"Homemade Dish","name":"Lasagna Bolognese","description":"Classic Italian meat lasagna","price":10,"available":true},
-            {"category":"Homemade Dish","name":"Spaghetti & Meatballs","description":"Spaghetti with meatballs in tomato sauce","price":10,"available":true},
-            {"category":"Homemade Dish","name":"Eggplant Parmigiana","description":"Baked eggplant with tomato and cheese","price":9,"available":true},
-            {"category":"Dessert","name":"Tiramisù","description":"Classic Italian tiramisù","price":5,"available":true},
-            {"category":"Dessert","name":"Chocolate Crostata","description":"Shortcrust pastry filled with chocolate cream","price":4.5,"available":true},
-            {"category":"Dessert","name":"Jam Crostata","description":"Shortcrust pastry filled with jam","price":4.5,"available":true},
-            {"category":"Dessert","name":"Nutella Pizza","description":"Pizza crust topped with Nutella and powdered sugar","price":6,"available":true}
+            {"sku":"HMD001","category":"Homemade Dish","name":"Lasagna Bolognese","description":"Classic Italian meat lasagna","price":10,"available":true},
+            {"sku":"HMD002","category":"Homemade Dish","name":"Spaghetti & Meatballs","description":"Spaghetti with meatballs in tomato sauce","price":10,"available":true},
+            {"sku":"HMD003","category":"Homemade Dish","name":"Eggplant Parmigiana","description":"Baked eggplant with tomato and cheese","price":9,"available":true},
+            {"sku":"DST001","category":"Dessert","name":"Tiramisù","description":"Classic Italian tiramisù","price":5,"available":true},
+            {"sku":"DST002","category":"Dessert","name":"Chocolate Crostata","description":"Shortcrust pastry filled with chocolate cream","price":4.5,"available":true},
+            {"sku":"DST003","category":"Dessert","name":"Jam Crostata","description":"Shortcrust pastry filled with jam","price":4.5,"available":true},
+            {"sku":"DST004","category":"Dessert","name":"Nutella Pizza","description":"Pizza crust topped with Nutella and powdered sugar","price":6,"available":true}
         ];
 
         // Global state
         let state = {
             items: MENU_DATA,
             categories: [],
-            lang: CONFIG.DEFAULT_LANG,
             cart: JSON.parse(localStorage.getItem('massimos_cart_v1') || '[]'),
             filters: { category: 'all', q: '' }
         };
 
-        // Translations dictionary
-        const dict = {
-            es: {
-                menu: "Menú", search: "Buscar productos...", all: "Todos", add: "Añadir", cart: "Carrito",
-                empty: "Tu carrito está vacío", notes: "Notas del producto", subtotal: "Subtotal", total: "Total",
-                clear: "Vaciar carrito", qty: "Cant.", remove: "Eliminar", language: "Idioma",
-                added: "Añadido al carrito", unavailable: "Agotado", phone: "Llamar", visit: "Visitar Web Oficial",
-                summary: "Ver Resumen del Pedido", preorder: "Hacer Pre-Pedido por WhatsApp",
-                summaryTitle: "Resumen del Pedido", howToUse: "¿Cómo usar este resumen?",
-                instructions: "Puedes usar este resumen para hacer tu pedido en persona con Massimo, o hacer un pre-pedido por WhatsApp para recoger o delivery."
-            },
-            en: {
-                menu: "Menu", search: "Search products...", all: "All", add: "Add", cart: "Cart",
-                empty: "Your cart is empty", notes: "Product notes", subtotal: "Subtotal", total: "Total",
-                clear: "Clear cart", qty: "Qty", remove: "Remove", language: "Language",
-                added: "Added to cart", unavailable: "Unavailable", phone: "Call", visit: "Visit Official Website",
-                summary: "View Order Summary", preorder: "Make Pre-Order via WhatsApp",
-                summaryTitle: "Order Summary", howToUse: "How to use this summary?",
-                instructions: "You can use this summary to place your order in person with Massimo, or make a pre-order via WhatsApp for pickup or delivery."
-            },
-            fr: {
-                menu: "Menu", search: "Rechercher produits...", all: "Tous", add: "Ajouter", cart: "Panier",
-                empty: "Votre panier est vide", notes: "Notes du produit", subtotal: "Sous-total", total: "Total",
-                clear: "Vider panier", qty: "Qté", remove: "Supprimer", language: "Langue",
-                added: "Ajouté au panier", unavailable: "Indisponible", phone: "Appeler", visit: "Visiter Site Officiel",
-                summary: "Voir Résumé Commande", preorder: "Pré-Commander via WhatsApp",
-                summaryTitle: "Résumé de Commande", howToUse: "Comment utiliser ce résumé?",
-                instructions: "Vous pouvez utiliser ce résumé pour passer votre commande en personne avec Massimo, ou faire une pré-commande via WhatsApp pour retrait ou livraison."
-            },
-            de: {
-                menu: "Menü", search: "Produkte suchen...", all: "Alle", add: "Hinzufügen", cart: "Warenkorb",
-                empty: "Dein Warenkorb ist leer", notes: "Produktnotizen", subtotal: "Zwischensumme", total: "Gesamt",
-                clear: "Warenkorb leeren", qty: "Menge", remove: "Entfernen", language: "Sprache",
-                added: "Zum Warenkorb hinzugefügt", unavailable: "Nicht verfügbar", phone: "Anrufen", visit: "Offizielle Website",
-                summary: "Bestellübersicht anzeigen", preorder: "Vorbestellung via WhatsApp",
-                summaryTitle: "Bestellübersicht", howToUse: "Wie verwende ich diese Übersicht?",
-                instructions: "Sie können diese Übersicht verwenden, um Ihre Bestellung persönlich bei Massimo aufzugeben oder eine Vorbestellung über WhatsApp für Abholung oder Lieferung zu machen."
-            },
-            it: {
-                menu: "Menù", search: "Cerca prodotti...", all: "Tutti", add: "Aggiungi", cart: "Carrello",
-                empty: "Il carrello è vuoto", notes: "Note prodotto", subtotal: "Subtotale", total: "Totale",
-                clear: "Svuota carrello", qty: "Qtà", remove: "Rimuovi", language: "Lingua",
-                added: "Aggiunto al carrello", unavailable: "Non disponibile", phone: "Chiama", visit: "Visita Sito Ufficiale",
-                summary: "Vedi Riepilogo Ordine", preorder: "Pre-Ordina via WhatsApp",
-                summaryTitle: "Riepilogo Ordine", howToUse: "Come usare questo riepilogo?",
-                instructions: "Puoi usare questo riepilogo per fare il tuo ordine di persona con Massimo, o fare un pre-ordine via WhatsApp per ritiro o consegna."
-            }
-        };
+
 
         // Utility functions
-        function t(key) {
-            return dict[state.lang][key] || key;
-        }
-
         function formatPrice(price) {
-            return new Intl.NumberFormat(state.lang, {
+            return new Intl.NumberFormat('en', {
                 style: 'currency',
                 currency: 'EUR'
             }).format(price);
@@ -1110,22 +1099,76 @@
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.classList.add('show');
+            
+            // Announce to screen readers
+            announceToScreenReader(message);
+            
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        function saveCart() {
-            localStorage.setItem('massimos_cart_v1', JSON.stringify(state.cart));
-            updateCartUI();
+        // Accessibility: Screen reader announcements
+        function announceToScreenReader(message) {
+            const announcer = document.getElementById('sr-announcements');
+            announcer.textContent = message;
+            
+            // Clear after announcement
+            setTimeout(() => {
+                announcer.textContent = '';
+            }, 1000);
         }
 
-        // Cart functions
+        // Focus management for modals
+        let lastFocusedElement = null;
+
+        function trapFocus(element) {
+            const focusableElements = element.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            element.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstElement) {
+                            e.preventDefault();
+                            lastElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastElement) {
+                            e.preventDefault();
+                            firstElement.focus();
+                        }
+                    }
+                }
+                
+                if (e.key === 'Escape') {
+                    if (element.id === 'cart-sidebar') closeCart();
+                    if (element.id === 'summary-modal') closeSummary();
+                }
+            });
+
+            firstElement?.focus();
+        }
+
+        function saveCart() {
+            try {
+                localStorage.setItem('massimos_cart_v1', JSON.stringify(state.cart));
+                updateCartUI();
+            } catch (e) {
+                console.warn("Cart save failed:", e);
+            }
+        }
+
+        // Cart functions with SKU support
         function addToCart(product) {
-            const existingItem = state.cart.find(item => item.name === product.name);
+            const existingItem = state.cart.find(item => item.sku === product.sku);
             
             if (existingItem) {
                 existingItem.qty += 1;
             } else {
                 state.cart.push({
+                    sku: product.sku,
                     name: product.name,
                     price: product.price,
                     qty: 1,
@@ -1135,32 +1178,32 @@
             }
             
             saveCart();
-            showToast(t('added'));
+            showToast('Added to cart');
         }
 
-        function updateQty(name, newQty) {
+        function updateQty(sku, newQty) {
             if (newQty <= 0) {
-                removeItem(name);
+                removeItem(sku);
                 return;
             }
             
-            const item = state.cart.find(item => item.name === name);
+            const item = state.cart.find(item => item.sku === sku);
             if (item) {
                 item.qty = newQty;
                 saveCart();
             }
         }
 
-        function setNotes(name, notes) {
-            const item = state.cart.find(item => item.name === name);
+        function setNotes(sku, notes) {
+            const item = state.cart.find(item => item.sku === sku);
             if (item) {
                 item.notes = notes;
                 saveCart();
             }
         }
 
-        function removeItem(name) {
-            state.cart = state.cart.filter(item => item.name !== name);
+        function removeItem(sku) {
+            state.cart = state.cart.filter(item => item.sku !== sku);
             saveCart();
         }
 
@@ -1177,6 +1220,7 @@
         function updateCartUI() {
             const count = state.cart.reduce((total, item) => total + item.qty, 0);
             document.getElementById('cart-count').textContent = count;
+            document.getElementById('mobile-cart-count').textContent = count;
             
             const cartContent = document.getElementById('cart-content');
             const cartFooter = document.getElementById('cart-footer');
@@ -1187,33 +1231,155 @@
                 cartFooter.style.display = 'none';
                 cartEmpty.innerHTML = `
                     <div style="font-size: 48px; color: var(--neutral); margin-bottom: 20px;">🛒</div>
-                    <p>${t('empty')}</p>
+                    <p>Your cart is empty</p>
                 `;
             } else {
                 cartEmpty.style.display = 'none';
                 cartFooter.style.display = 'block';
                 
-                cartContent.innerHTML = state.cart.map(item => `
-                    <div class="cart-item">
-                        <div class="cart-item-header">
-                            <div class="cart-item-name">${item.name}</div>
-                            <div class="cart-item-price">${formatPrice(item.price)}</div>
-                        </div>
-                        <div class="cart-item-controls">
-                            <div class="qty-controls">
-                                <button class="qty-btn" onclick="updateQty('${item.name}', ${item.qty - 1})">-</button>
-                                <span class="qty-display">${item.qty}</span>
-                                <button class="qty-btn" onclick="updateQty('${item.name}', ${item.qty + 1})">+</button>
+                cartContent.innerHTML = state.cart.map((item, index) => {
+                    let displayName = item.name;
+                    if (item.options && item.options.length > 0) {
+                        const optionNames = item.options.map(opt => opt.name).join(', ');
+                        displayName += ` (${optionNames})`;
+                    }
+                    
+                    return `
+                        <div class="cart-item">
+                            <div class="cart-item-header">
+                                <div class="cart-item-name">${esc(displayName)}</div>
+                                <div class="cart-item-price">${formatPrice(item.price)}</div>
                             </div>
-                            <button class="remove-item" onclick="removeItem('${item.name}')">${t('remove')}</button>
+                            <div class="cart-item-controls">
+                                <div class="qty-controls">
+                                    <button class="qty-btn" data-index="${index}" data-action="decrease">-</button>
+                                    <span class="qty-display">${item.qty}</span>
+                                    <button class="qty-btn" data-index="${index}" data-action="increase">+</button>
+                                </div>
+                                <button class="remove-item" data-index="${index}" data-action="remove">Remove</button>
+                            </div>
+                            <textarea class="cart-notes" placeholder="Product notes" 
+                                      data-index="${index}">${esc(item.notes)}</textarea>
                         </div>
-                        <textarea class="cart-notes" placeholder="${t('notes')}" 
-                                  onchange="setNotes('${item.name}', this.value)">${item.notes}</textarea>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 
                 document.getElementById('total-amount').textContent = formatPrice(cartTotal());
             }
+        }
+
+        // Customization modal state
+        let currentCustomizingProduct = null;
+        let selectedVariant = null;
+        let selectedExtras = [];
+
+        function showCustomizeModal(product) {
+            currentCustomizingProduct = product;
+            selectedVariant = product.variants ? product.variants[0] : null;
+            selectedExtras = [];
+            
+            const modal = document.getElementById('customize-modal');
+            const title = document.getElementById('customize-title');
+            const variantsSection = document.getElementById('customize-variants');
+            const extrasSection = document.getElementById('customize-extras');
+            const variantsList = document.getElementById('variants-list');
+            const extrasList = document.getElementById('extras-list');
+            const notes = document.getElementById('customize-notes');
+            
+            title.textContent = `Customize ${product.name}`;
+            notes.value = '';
+            
+            // Show/hide sections based on product options
+            if (product.variants && product.variants.length > 0) {
+                variantsSection.style.display = 'block';
+                variantsList.innerHTML = product.variants.map((variant, index) => `
+                    <div class="variant-option ${index === 0 ? 'selected' : ''}" data-variant-index="${index}">
+                        <div class="variant-info">
+                            <div class="variant-radio"></div>
+                            <span>${esc(variant.name)}</span>
+                        </div>
+                        <div class="variant-price">${variant.price > 0 ? '+' + formatPrice(variant.price) : 'Base'}</div>
+                    </div>
+                `).join('');
+            } else {
+                variantsSection.style.display = 'none';
+            }
+            
+            if (product.extras && product.extras.length > 0) {
+                extrasSection.style.display = 'block';
+                extrasList.innerHTML = product.extras.map((extra, index) => `
+                    <div class="extra-option" data-extra-index="${index}">
+                        <div class="extra-info">
+                            <div class="extra-checkbox"></div>
+                            <span>${esc(extra.name)}</span>
+                        </div>
+                        <div class="extra-price">+${formatPrice(extra.price)}</div>
+                    </div>
+                `).join('');
+            } else {
+                extrasSection.style.display = 'none';
+            }
+            
+            updateCustomizeTotal();
+            modal.classList.add('active');
+            
+            // Trap focus in modal
+            trapFocus(modal.querySelector('.customize-content'));
+            announceToScreenReader('Customization modal opened');
+        }
+
+        function closeCustomize() {
+            document.getElementById('customize-modal').classList.remove('active');
+            currentCustomizingProduct = null;
+            selectedVariant = null;
+            selectedExtras = [];
+            
+            // Return focus
+            if (lastFocusedElement) {
+                lastFocusedElement.focus();
+                lastFocusedElement = null;
+            }
+            announceToScreenReader('Customization modal closed');
+        }
+
+        function updateCustomizeTotal() {
+            if (!currentCustomizingProduct) return;
+            
+            let total = currentCustomizingProduct.price;
+            
+            if (selectedVariant) {
+                total += selectedVariant.price;
+            }
+            
+            selectedExtras.forEach(extra => {
+                total += extra.price;
+            });
+            
+            document.getElementById('customize-total').textContent = formatPrice(total);
+        }
+
+        function addCustomizedItem() {
+            if (!currentCustomizingProduct) return;
+            
+            const options = [];
+            
+            if (selectedVariant && selectedVariant.price > 0) {
+                options.push(selectedVariant);
+            }
+            
+            options.push(...selectedExtras);
+            
+            const notes = document.getElementById('customize-notes').value;
+            
+            addToCart(currentCustomizingProduct, options);
+            
+            // Set notes if provided
+            if (notes.trim()) {
+                const lastItemIndex = state.cart.length - 1;
+                setNotes(lastItemIndex, notes);
+            }
+            
+            closeCustomize();
         }
 
         function renderProducts() {
@@ -1238,7 +1404,7 @@
                 container.innerHTML = `
                     <div style="text-align: center; padding: 50px; color: #666;">
                         <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
-                        <p>No se encontraron productos</p>
+                        <p>No products found</p>
                     </div>
                 `;
                 return;
@@ -1251,16 +1417,20 @@
                         if (item.category === 'Homemade Dish') cardClass += ' homemade';
                         if (item.category === 'Dessert') cardClass += ' dessert';
                         
+                        const hasCustomization = (item.variants && item.variants.length > 0) || (item.extras && item.extras.length > 0);
+                        const buttonText = hasCustomization ? 'Customize' : 'Add';
+                        const buttonAction = hasCustomization ? 'customize' : 'add-to-cart';
+                        
                         return `
                             <div class="${cardClass}">
-                                ${!item.available ? `<div class="unavailable-badge">${t('unavailable')}</div>` : ''}
-                                <h3 class="product-name">${item.name}</h3>
-                                <p class="product-description">${item.description}</p>
+                                ${!item.available ? `<div class="unavailable-badge">Unavailable</div>` : ''}
+                                <h3 class="product-name">${esc(item.name)}</h3>
+                                <p class="product-description">${esc(item.description)}</p>
                                 <div class="product-footer">
                                     <div class="product-price">${formatPrice(item.price)}</div>
-                                    <button class="add-btn" onclick="addToCart(${JSON.stringify(item).replace(/"/g, '&quot;')})" 
+                                    <button class="add-btn" data-sku="${esc(item.sku)}" data-action="${buttonAction}"
                                             ${!item.available ? 'disabled' : ''}>
-                                        ${t('add')}
+                                        ${buttonText}
                                     </button>
                                 </div>
                             </div>
@@ -1273,52 +1443,36 @@
         function renderCategories() {
             const container = document.getElementById('categories-list');
             const allChip = `<div class="category-chip ${state.filters.category === 'all' ? 'active' : ''}" 
-                                  data-category="all" onclick="setCategory('all')">${t('all')}</div>`;
+                                  data-category="all">All</div>`;
             
             const categoryChips = state.categories.map(category => `
                 <div class="category-chip ${state.filters.category === category ? 'active' : ''}" 
-                     data-category="${category}" onclick="setCategory('${category}')">${category}</div>
+                     data-category="${esc(category)}">${esc(category)}</div>
             `).join('');
             
             container.innerHTML = allChip + categoryChips;
         }
 
-        function updateTexts() {
-            document.getElementById('current-lang').textContent = state.lang.toUpperCase();
-            document.getElementById('cart-text').textContent = t('cart');
-            document.getElementById('search-input').placeholder = t('search');
-            document.getElementById('cart-title').textContent = t('cart');
-            document.getElementById('total-label').textContent = t('subtotal') + ':';
-            document.getElementById('clear-btn').textContent = t('clear');
-            document.getElementById('summary-btn').innerHTML = `📋 ${t('summary')}`;
-            document.getElementById('preorder-btn').innerHTML = `📱 ${t('preorder')}`;
-            document.getElementById('summary-modal-title').textContent = t('summaryTitle');
-            document.getElementById('summary-total-label').textContent = t('total') + ':';
-            document.getElementById('summary-instructions-title').textContent = t('howToUse');
-            document.getElementById('summary-instructions-text').textContent = t('instructions');
-            
-            renderCategories();
-            renderProducts();
-            updateCartUI();
-        }
+
 
         // Event handlers
-        function toggleLanguageDropdown() {
-            const dropdown = document.getElementById('language-dropdown');
-            dropdown.classList.toggle('active');
-        }
-
-        function changeLanguage(lang) {
-            state.lang = lang;
-            document.getElementById('language-dropdown').classList.remove('active');
-            updateTexts();
-        }
 
         function toggleCart() {
+            lastFocusedElement = document.activeElement;
             const overlay = document.getElementById('cart-overlay');
             const sidebar = document.getElementById('cart-sidebar');
-            overlay.classList.add('active');
-            sidebar.classList.add('active');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.style.transition = 'transform 0.3s ease';
+                sidebar.style.transform = sidebar.classList.contains('active') ? 'translateX(100%)' : 'translateX(0)';
+            }
+            
+            overlay.classList.toggle('active');
+            sidebar.classList.toggle('active');
+            
+            // Trap focus in cart
+            trapFocus(sidebar);
+            announceToScreenReader('Cart ' + (sidebar.classList.contains('active') ? 'opened' : 'closed'));
         }
 
         function closeCart() {
@@ -1326,6 +1480,13 @@
             const sidebar = document.getElementById('cart-sidebar');
             overlay.classList.remove('active');
             sidebar.classList.remove('active');
+            
+            // Return focus
+            if (lastFocusedElement) {
+                lastFocusedElement.focus();
+                lastFocusedElement = null;
+            }
+            announceToScreenReader('Cart closed');
         }
 
         function setCategory(category) {
@@ -1341,27 +1502,47 @@
         function showOrderSummary() {
             if (state.cart.length === 0) return;
             
+            lastFocusedElement = document.activeElement;
             const modal = document.getElementById('summary-modal');
             const itemsContainer = document.getElementById('summary-items');
             const totalAmount = document.getElementById('summary-total-amount');
             
-            itemsContainer.innerHTML = state.cart.map(item => `
-                <div class="summary-item">
-                    <div class="summary-item-info">
-                        <div class="summary-item-name">${item.name}</div>
-                        <div class="summary-item-qty">${t('qty')}: ${item.qty} × ${formatPrice(item.price)}</div>
-                        ${item.notes ? `<div class="summary-item-notes">${item.notes}</div>` : ''}
+            itemsContainer.innerHTML = state.cart.map(item => {
+                let displayName = item.name;
+                if (item.options && item.options.length > 0) {
+                    const optionNames = item.options.map(opt => opt.name).join(', ');
+                    displayName += ` (${optionNames})`;
+                }
+                
+                return `
+                    <div class="summary-item">
+                        <div class="summary-item-info">
+                            <div class="summary-item-name">${esc(displayName)}</div>
+                            <div class="summary-item-qty">Qty: ${item.qty} × ${formatPrice(item.price)}</div>
+                            ${item.notes ? `<div class="summary-item-notes">${esc(item.notes)}</div>` : ''}
+                        </div>
+                        <div class="summary-item-price">${formatPrice(item.price * item.qty)}</div>
                     </div>
-                    <div class="summary-item-price">${formatPrice(item.price * item.qty)}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             
             totalAmount.textContent = formatPrice(cartTotal());
             modal.classList.add('active');
+            
+            // Trap focus in modal
+            trapFocus(modal.querySelector('.summary-content'));
+            announceToScreenReader('Order Summary opened');
         }
 
         function closeSummary() {
             document.getElementById('summary-modal').classList.remove('active');
+            
+            // Return focus
+            if (lastFocusedElement) {
+                lastFocusedElement.focus();
+                lastFocusedElement = null;
+            }
+            announceToScreenReader('Order Summary closed');
         }
 
         function sendPreOrder() {
@@ -1371,56 +1552,212 @@
             const restaurantName = config.restaurant_name || "Massimo's Pizza";
             const whatsappNumber = config.whatsapp_number || CONFIG.WHATSAPP;
             
-            let message = `${restaurantName} — Pre-Pedido\n`;
-            message += `Idioma: ${dict[state.lang].language}\n`;
+            let message = `${restaurantName} — Pre-Order\n`;
             message += `--------------------------------\n`;
-            message += `Artículos:\n`;
+            message += `Items:\n`;
             
             state.cart.forEach(item => {
-                message += `- (x${item.qty}) ${item.name} — ${formatPrice(item.price)}`;
-                if (item.notes) {
-                    message += ` [${item.notes.substring(0, 50)}${item.notes.length > 50 ? '...' : ''}]`;
+                let displayName = item.name;
+                if (item.options && item.options.length > 0) {
+                    const optionNames = item.options.map(opt => opt.name).join(', ');
+                    displayName += ` (${optionNames})`;
+                }
+                
+                message += `- (x${item.qty}) ${displayName} — ${formatPrice(item.price)}`;
+                if (item.notes && item.notes.trim()) {
+                    const truncatedNotes = item.notes.length > 50 ? 
+                        item.notes.substring(0, 50) + '...' : item.notes;
+                    message += ` [${truncatedNotes}]`;
                 }
                 message += `\n`;
             });
             
-            message += `${t('total')}: ${formatPrice(cartTotal())}\n`;
+            message += `Total: ${formatPrice(cartTotal())}\n`;
             message += `--------------------------------\n`;
-            message += `Por favor confirmar disponibilidad y tiempo de preparación.\n`;
-            message += `Web: ${CONFIG.SITE_URL}`;
+            message += `Please confirm availability and preparation time.\n`;
+            message += `Website: ${CONFIG.SITE_URL}`;
             
             const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
         }
 
-        // Initialize app
+        // Initialize app with event listeners
         function initApp() {
+            // Frame detection for embedded environments
+            if (window.self !== window.top) {
+                document.body.classList.add('embedded-frame');
+            }
+            
+            // Dynamic viewport height handling
+            function setVH() {
+                document.body.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+            }
+            setVH();
+            window.addEventListener('resize', setVH);
+            
+            // Persistent cart save on page unload
+            window.addEventListener('beforeunload', saveCart);
+            
             // Extract unique categories from menu data
             state.categories = [...new Set(state.items.map(item => item.category))];
             
             // Initial render
-            updateTexts();
+            renderCategories();
+            renderProducts();
             updateCartUI();
             
-            // Setup search
-            document.getElementById('search-input').addEventListener('input', (e) => {
-                state.filters.q = e.target.value;
+            // Setup debounced search
+            const debouncedSearch = debounce((query) => {
+                state.filters.q = query;
                 renderProducts();
+            }, 300);
+            
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                debouncedSearch(e.target.value);
             });
             
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.language-selector')) {
-                    document.getElementById('language-dropdown').classList.remove('active');
-                }
-            });
+            // Setup event delegation for dynamic content
+            document.addEventListener('click', handleGlobalClick);
+            document.addEventListener('change', handleGlobalChange);
             
-            // Close modal when clicking outside
+            // Close modals when clicking outside
             document.getElementById('summary-modal').addEventListener('click', (e) => {
                 if (e.target === document.getElementById('summary-modal')) {
                     closeSummary();
                 }
             });
+            
+            document.getElementById('customize-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('customize-modal')) {
+                    closeCustomize();
+                }
+            });
+            
+            // Setup logo click
+            document.querySelector('.logo').addEventListener('click', scrollToTop);
+            
+            // Setup cart button
+            document.querySelector('.cart-btn').addEventListener('click', toggleCart);
+            
+            // Setup cart overlay
+            document.getElementById('cart-overlay').addEventListener('click', closeCart);
+            
+            // Setup close buttons
+            document.querySelector('.close-cart').addEventListener('click', closeCart);
+            document.querySelector('.close-summary').addEventListener('click', closeSummary);
+            document.querySelector('.close-customize').addEventListener('click', closeCustomize);
+            
+            // Setup cart actions
+            document.getElementById('clear-btn').addEventListener('click', clearCart);
+            document.getElementById('summary-btn').addEventListener('click', showOrderSummary);
+            document.getElementById('preorder-btn').addEventListener('click', sendPreOrder);
+        }
+
+        // Global event handlers using event delegation
+        function handleGlobalClick(e) {
+            const target = e.target;
+            
+            // Category chips
+            if (target.classList.contains('category-chip')) {
+                const category = target.dataset.category;
+                setCategory(category);
+                return;
+            }
+            
+            // Product actions
+            if (target.dataset.action === 'add-to-cart') {
+                const sku = target.dataset.sku;
+                const product = state.items.find(item => item.sku === sku);
+                if (product) {
+                    // Add visual feedback
+                    target.classList.add('adding');
+                    setTimeout(() => {
+                        target.classList.remove('adding');
+                        target.classList.add('added');
+                        setTimeout(() => target.classList.remove('added'), 1000);
+                    }, 200);
+                    
+                    addToCart(product);
+                }
+                return;
+            }
+            
+            if (target.dataset.action === 'customize') {
+                const sku = target.dataset.sku;
+                const product = state.items.find(item => item.sku === sku);
+                if (product) {
+                    lastFocusedElement = target;
+                    showCustomizeModal(product);
+                }
+                return;
+            }
+            
+            // Customization modal interactions
+            if (target.classList.contains('variant-option')) {
+                const variantIndex = parseInt(target.dataset.variantIndex);
+                if (currentCustomizingProduct && currentCustomizingProduct.variants) {
+                    // Remove previous selection
+                    document.querySelectorAll('.variant-option').forEach(opt => opt.classList.remove('selected'));
+                    target.classList.add('selected');
+                    selectedVariant = currentCustomizingProduct.variants[variantIndex];
+                    updateCustomizeTotal();
+                }
+                return;
+            }
+            
+            if (target.classList.contains('extra-option')) {
+                const extraIndex = parseInt(target.dataset.extraIndex);
+                if (currentCustomizingProduct && currentCustomizingProduct.extras) {
+                    const extra = currentCustomizingProduct.extras[extraIndex];
+                    const isSelected = target.classList.contains('selected');
+                    
+                    if (isSelected) {
+                        target.classList.remove('selected');
+                        selectedExtras = selectedExtras.filter(e => e.name !== extra.name);
+                    } else {
+                        target.classList.add('selected');
+                        selectedExtras.push(extra);
+                    }
+                    updateCustomizeTotal();
+                }
+                return;
+            }
+            
+            // Cart quantity controls
+            if (target.dataset.action === 'increase') {
+                const index = parseInt(target.dataset.index);
+                if (state.cart[index]) {
+                    updateQty(null, index, state.cart[index].qty + 1);
+                }
+                return;
+            }
+            
+            if (target.dataset.action === 'decrease') {
+                const index = parseInt(target.dataset.index);
+                if (state.cart[index]) {
+                    updateQty(null, index, state.cart[index].qty - 1);
+                }
+                return;
+            }
+            
+            if (target.dataset.action === 'remove') {
+                const index = parseInt(target.dataset.index);
+                removeItem(index);
+                return;
+            }
+        }
+
+        function handleGlobalChange(e) {
+            const target = e.target;
+            
+            // Cart notes with debouncing
+            if (target.classList.contains('cart-notes')) {
+                const index = parseInt(target.dataset.index);
+                clearTimeout(target.notesTimeout);
+                target.notesTimeout = setTimeout(() => {
+                    setNotes(index, target.value);
+                }, 500);
+            }
         }
 
         // Element SDK integration
@@ -1448,5 +1785,5 @@
         // Start the app
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'990af14a725713ae',t:'MTc2MDgyMDk4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'991001c44415cbc0',t:'MTc2MDg3NDA5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
