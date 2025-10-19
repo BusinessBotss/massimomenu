@@ -234,6 +234,21 @@ async function initApp(){
   setInterval(()=>{
     try{ const cached = JSON.parse(localStorage.getItem('massimo_menu_cache')||'null'); updateLastUpdatedLabel(cached && cached.timestamp); }catch(e){}
   }, 60 * 1000);
+  
+  // Wire click on last-updated to force refresh
+  const lastBtn = document.getElementById('last-updated');
+  if(lastBtn){
+    lastBtn.addEventListener('click', async ()=>{
+      try{
+        lastBtn.disabled = true;
+        const prev = lastBtn.textContent;
+        lastBtn.textContent = 'Actualizando...';
+        await fetchMenu();
+        // restore after a short delay so users notice the update
+        setTimeout(()=>{ try{ const cached = JSON.parse(localStorage.getItem('massimo_menu_cache')||'null'); updateLastUpdatedLabel(cached && cached.timestamp); lastBtn.textContent = prev; }catch(e){ lastBtn.textContent = prev; } lastBtn.disabled = false; }, 800);
+      }catch(e){ lastBtn.disabled = false; lastBtn.textContent = 'Última actualización: —'; }
+    });
+  }
 
   const debouncedSearch = debounce((q)=>{ state.filters.q=q; renderProducts(); },300);
   const searchInput=document.getElementById('search-input'); if(searchInput) searchInput.addEventListener('input',(e)=>debouncedSearch(e.target.value));
