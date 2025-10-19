@@ -27,6 +27,10 @@
             --shadow: rgba(47, 82, 51, 0.1);
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--cream);
@@ -62,7 +66,7 @@
         /* Header */
         .header {
             background: var(--white);
-            box-shadow: 0 2px 20px var(--shadow);
+            box-shadow: 0 4px 25px rgba(47, 82, 51, 0.15);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -77,7 +81,7 @@
         }
 
         .logo {
-            height: 80px;
+            height: 95px;
             cursor: pointer;
             transition: transform 0.3s ease;
         }
@@ -178,7 +182,7 @@
 
         .categories-list {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             min-width: max-content;
             padding: 0 20px;
         }
@@ -211,7 +215,7 @@
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 25px;
+            gap: 30px;
             margin-top: 20px;
         }
 
@@ -323,7 +327,7 @@
             height: 100%;
             background: var(--white);
             z-index: 1001;
-            transition: right 0.3s ease;
+            transition: right 0.25s ease;
             display: flex;
             flex-direction: column;
         }
@@ -714,7 +718,7 @@
             width: 40px;
             height: 40px;
             border: 4px solid var(--cream);
-            border-top: 4px solid var(--green);
+            border-top: 4px solid var(--red);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -729,7 +733,7 @@
             position: fixed;
             bottom: 20px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) scale(0.95);
             background: var(--green);
             color: var(--white);
             padding: 15px 25px;
@@ -737,11 +741,13 @@
             font-weight: 600;
             z-index: 2000;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
         }
 
         .toast.show {
             opacity: 1;
+            transform: translateX(-50%) scale(1.05);
         }
 
         /* Accessibility */
@@ -787,7 +793,7 @@
             }
 
             .logo {
-                height: 40px;
+                height: 55px;
             }
 
             .header-actions {
@@ -864,7 +870,7 @@
   <header class="header">
    <div class="container">
     <div class="header-content"><img src="https://res.cloudinary.com/dxhef6dju/image/upload/v1760817546/2_xm9rjm.png" alt="Massimo's Pizza" class="logo" onclick="scrollToTop()">
-     <div class="header-actions"><button class="cart-btn" onclick="toggleCart()"> 🛒 <span id="cart-text">Cart</span> <span class="cart-count" id="cart-count">0</span> </button>
+     <div class="header-actions"><button class="cart-btn" onclick="toggleCart()" aria-label="Open shopping cart"> 🛒 <span id="cart-text">Cart</span> <span class="cart-count" id="cart-count">0</span> </button>
      </div>
     </div>
    </div>
@@ -872,7 +878,7 @@
   <main>
    <section class="search-section">
     <div class="container">
-     <div class="search-container"><input type="text" class="search-input" id="search-input" placeholder="Search products..."> <span class="search-icon">🔍</span>
+     <div class="search-container"><input type="text" class="search-input" id="search-input" placeholder="Search products..." aria-label="Search products"> <span class="search-icon" aria-hidden="true">🔍</span>
      </div>
     </div>
    </section>
@@ -910,7 +916,7 @@
   <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
   <div class="cart-sidebar" id="cart-sidebar">
    <div class="cart-header">
-    <h3 class="cart-title" id="cart-title">Cart</h3><button class="close-cart" onclick="closeCart()">✕</button>
+    <h3 class="cart-title" id="cart-title">Cart</h3><button class="close-cart" onclick="closeCart()" aria-label="Close cart">✕</button>
    </div>
    <div class="cart-content" id="cart-content">
     <div class="cart-empty" id="cart-empty">
@@ -964,6 +970,9 @@
      <h4 id="summary-instructions-title">How to use this summary?</h4>
      <p id="summary-instructions-text">You can use this summary to place your order in person with Massimo, or make a pre-order via WhatsApp for pickup or delivery.</p>
     </div>
+    <button class="summary-btn" onclick="sendPreOrder()" style="margin-top: 20px;">
+        ✓ Confirm Order
+    </button>
    </div>
   </div><!-- Toast with accessibility -->
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div><!-- Screen reader announcements -->
@@ -1548,6 +1557,8 @@
         function sendPreOrder() {
             if (state.cart.length === 0) return;
             
+            if (!confirm('¿Enviar pedido a WhatsApp?')) return;
+            
             const config = window.elementSdk?.config || defaultConfig;
             const restaurantName = config.restaurant_name || "Massimo's Pizza";
             const whatsappNumber = config.whatsapp_number || CONFIG.WHATSAPP;
@@ -1587,6 +1598,14 @@
             if (window.self !== window.top) {
                 document.body.classList.add('embedded-frame');
             }
+            
+            // Listen for cart changes in other tabs
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'massimos_cart_v1') {
+                    state.cart = JSON.parse(e.newValue || '[]');
+                    updateCartUI();
+                }
+            });
             
             // Dynamic viewport height handling
             function setVH() {
